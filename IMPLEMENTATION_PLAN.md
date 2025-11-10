@@ -1078,21 +1078,45 @@ web/
 
 ### Phase 5: API Layer (Week 6)
 1. **Setup NestJS application**
-2. **Implement REST controllers**
-3. **Add authentication & authorization**
-4. **Add validation & error handling**
-5. **API documentation (Swagger)**
+2. **Implement REST controllers** (26 endpoints across 7 resource groups):
+   - Authentication (3 endpoints)
+   - Users (3 endpoints)
+   - Jobs (6 endpoints)
+   - **Location & Mapping (8 endpoints)** *(A-6-1, D-6)*:
+     - Geocoding (forward/reverse)
+     - Map configuration
+     - Guard location tracking
+     - Location history/routes
+     - Service area validation
+   - Payments (3 endpoints)
+   - Admin (1 endpoint)
+3. **Add authentication & authorization** (JWT, RBAC)
+4. **Add validation & error handling** (DTOs, exception filters)
+5. **Integrate external services**:
+   - Mapbox (geocoding proxy)
+   - Ably (real-time location streaming)
+   - PostGIS (spatial queries)
+6. **API documentation (Swagger/OpenAPI)**
 
-**Testing**: API integration tests using Supertest. E2E tests for critical flows.
+**Testing**: API integration tests using Supertest. E2E tests for critical flows (location tracking, geocoding).
 
 ### Phase 6: Web Frontend (Week 7-8)
 1. **Setup Next.js application**
-2. **Implement customer flows** (register, book, track)
+2. **Implement customer flows** (register, book, track):
+   - Address input with geocoding autocomplete
+   - Map-based job creation (drop pin)
+   - Real-time guard tracking on map (Ably + Mapbox)
+   - Location history/route visualization
 3. **Implement guard flows** (register, accept jobs, update location)
 4. **Implement admin dashboard**
-5. **Integrate with API**
+5. **Integrate with API** (26 endpoints)
+6. **Map integration** (Mapbox GL JS):
+   - Interactive map tiles
+   - Geocoding for address input
+   - Real-time marker updates
+   - Route polylines for history
 
-**Testing**: Component tests, E2E tests using Playwright.
+**Testing**: Component tests, E2E tests using Playwright (including map interactions).
 
 ### Phase 7: Integration & Testing (Week 9)
 1. **Full system integration testing**
@@ -1360,4 +1384,7 @@ This implementation plan now incorporates the following recommendations from the
 - TESTING_STRATEGY.md: Complete testing approach and tools
 - A-1-1 Section 13: Operations & Automation details
 - D-1: Technical architecture decisions with offline mode
+- D-2: MVP API Design (26 endpoints across 7 resource groups)
+- D-6: Location & Mapping Architecture decision
 - A-4-1: Authentication with advanced security features
+- A-6-1: Location & Mapping API Specification (geocoding, maps, tracking)
