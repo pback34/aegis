@@ -1109,6 +1109,113 @@ web/
 
 ---
 
+## Phase 9: Post-Launch Operations & Monitoring (Ongoing)
+
+### 9.1 Operational Excellence (Based on EVALUATION.md)
+
+**Immediate (Week 10-12)**:
+1. **CI/CD Enhancement**:
+   - GitHub Actions pipeline with automated testing
+   - Blue/green deployment for zero-downtime
+   - Automated rollback on failure
+   - Security scanning in pipeline (Snyk, Dependabot)
+
+2. **Monitoring & Alerting**:
+   - Datadog dashboards (business + technical metrics)
+   - PagerDuty integration for on-call
+   - Anomaly detection configuration
+   - Synthetic monitoring (every 5 minutes)
+
+3. **Cost Management**:
+   - AWS Cost Explorer dashboards
+   - Budget alerts (80% and 100% thresholds)
+   - Tag-based cost tracking
+   - Monthly cost optimization reviews
+
+4. **Security Automation**:
+   - Dependabot for dependency updates
+   - OWASP ZAP weekly scans
+   - AWS GuardDuty threat detection
+   - Vulnerability response SLA enforcement
+
+### 9.2 Testing Maturity (Based on TESTING_STRATEGY.md)
+
+**Testing Goals**:
+- Domain layer: >95% coverage (TDD approach)
+- Application layer: >90% coverage
+- Infrastructure layer: >80% coverage
+- Overall: >85% coverage
+
+**Testing Types**:
+- Unit tests: Run on every commit (< 2 min)
+- Integration tests: Run on every commit (< 3 min)
+- E2E tests: Run pre-deployment (< 10 min)
+- Load tests: Weekly + pre-release
+- Security tests: Weekly
+- Chaos tests: Bi-weekly (staging)
+
+### 9.3 Chaos Engineering (Month 2+)
+
+**Bi-weekly Chaos Tests** (Staging):
+- ECS container kill tests
+- Database connection failures
+- Redis cache failures
+- Network latency injection
+- Third-party API failures
+
+**Monthly Chaos Tests** (Production - Maintenance Windows):
+- Controlled container failures
+- Load spike tests
+- Geographic failover tests
+
+---
+
+## Enhanced Implementation Timeline with Operations
+
+### Revised Timeline: 12 Weeks (Including Operational Setup)
+
+**Weeks 1-2: Foundation + DevOps**
+- Domain layer (Phase 1)
+- **CI/CD pipeline setup**
+- **Monitoring infrastructure (Datadog, Sentry)**
+- **Testing framework configuration**
+- Unit test coverage: 50% domain layer
+
+**Weeks 3-4: Application Layer + Testing**
+- Application layer (Phase 2)
+- **Integration test framework**
+- **Contract testing setup (Pact)**
+- Unit test coverage: 80% domain layer
+
+**Weeks 5-6: Infrastructure + Security**
+- Database repositories (Phase 3)
+- External service adapters (Phase 4)
+- **Security scanning (Snyk, Dependabot)**
+- **Cost monitoring dashboards**
+- Integration test coverage: 60%
+
+**Weeks 7-8: API + E2E Testing**
+- REST API (Phase 5)
+- **E2E testing framework (Playwright)**
+- **Load testing setup (k6)**
+- E2E coverage: Critical paths
+
+**Weeks 9-10: Frontend + Mobile**
+- Web application (Phase 6)
+- **Mobile offline mode implementation**
+- **React Native testing (Detox)**
+- Overall test coverage: >85%
+
+**Weeks 11-12: Launch Prep + Operations**
+- Staging deployment
+- **Security audit (OWASP ZAP)**
+- **Chaos engineering tests**
+- **Runbook creation**
+- Production deployment
+- **Post-launch monitoring validation**
+
+---
+
 ## Technology Stack Summary
 
 ### Core
@@ -1212,3 +1319,45 @@ web/
 - The **implementation order allows for continuous integration testing** as we build outward
 - **Mobile support** is designed into the architecture but will be implemented post-MVP
 - All **business logic is in the domain layer**, making it easy to add new interfaces (mobile, webhooks, etc.) without changing core logic
+
+---
+
+## Key Recommendations Integrated from EVALUATION.md
+
+This implementation plan now incorporates the following recommendations from the architectural evaluation:
+
+### Short-Term (MVP Launch) ✅
+1. **Offline Mode**: Implemented in mobile apps using WatermelonDB + AsyncStorage (Weeks 9-10)
+2. **CI/CD Automation**: GitHub Actions pipeline with automated testing (Weeks 1-2)
+3. **Vulnerability Scanning**: Dependabot + Snyk in CI pipeline (Weeks 5-6)
+4. **Cost Monitoring**: AWS Cost Explorer with budget alerts (Weeks 5-6)
+5. **Testing Framework**: Comprehensive testing strategy with >85% coverage (Throughout)
+
+### Medium-Term (Post-Launch Growth) 📋
+1. **Microservices Extraction**: When metrics trigger (error rate >5%, scaling needs)
+   - Extract Matching Service (high CPU)
+   - Extract Locations Service (high write volume)
+2. **Multi-Region Deployment**: Route53 + RDS replication for national scale
+3. **Advanced Security**: Anomaly detection via Datadog, device fingerprinting
+4. **Chaos Engineering**: Bi-weekly staging tests, monthly production tests
+
+### Long-Term (Scale to 50+ Cities) 🚀
+1. **Full Microservices**: Complete migration to microservices architecture
+2. **AI Enhancements**: ML-based guard matching optimization
+3. **SOC2 Compliance**: Security audit and certification
+4. **International Expansion**: Multi-country support, i18n
+
+### Operational Improvements Implemented
+- **Monitoring**: Datadog + Sentry + Grafana with anomaly detection
+- **Alerting**: PagerDuty integration with severity-based SLAs
+- **Testing**: Comprehensive pyramid (unit > integration > E2E)
+- **Security**: Automated scanning, vulnerability SLAs, chaos tests
+- **Performance**: Load testing (k6), performance budgets
+- **Cost**: Tracking, alerting, optimization reviews
+
+**References**:
+- EVALUATION.md: Comprehensive architecture assessment (8.5/10 score)
+- TESTING_STRATEGY.md: Complete testing approach and tools
+- A-1-1 Section 13: Operations & Automation details
+- D-1: Technical architecture decisions with offline mode
+- A-4-1: Authentication with advanced security features
