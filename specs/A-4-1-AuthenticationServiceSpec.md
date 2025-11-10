@@ -1018,9 +1018,26 @@ describe('Auth (e2e)', () => {
 
 ### 10.4 Rate Limiting
 
-- **Login attempts**: 5 attempts per 15 minutes per IP
-- **Token refresh**: 10 attempts per minute per user
-- **MFA verification**: 3 attempts per minute per user
+**Multi-Layer Rate Limiting Strategy**:
+
+- **IP-based limits**:
+  - Login attempts: 5 attempts per 15 minutes per IP
+  - Registration: 3 attempts per hour per IP
+  - MFA verification: 3 attempts per minute per IP
+
+- **User-based limits** (prevents distributed attacks):
+  - Login attempts: 10 attempts per 15 minutes per user (email)
+  - Token refresh: 10 attempts per minute per user
+  - Password reset requests: 3 per day per user
+
+- **Global limits** (DDoS protection):
+  - Platform-wide login requests: 1000 per second
+  - Alert if threshold exceeded
+
+**Implementation Notes**:
+- Use Redis for distributed rate limiting across ECS containers
+- Return 429 Too Many Requests with Retry-After header
+- Log rate limit violations for security analysis
 
 ---
 
@@ -1071,13 +1088,37 @@ Alert on:
 
 ## 13. Future Enhancements
 
-1. **OAuth 2.0 Social Login**: Google, Apple Sign-In
-2. **Password Reset**: Email-based password reset flow
-3. **Email Verification**: Verify email on registration
-4. **Passwordless Auth**: WebAuthn / passkeys
-5. **Session Management**: View and revoke active sessions
-6. **Device Fingerprinting**: Detect suspicious login locations
-7. **Risk-Based Auth**: Require step-up auth for sensitive operations
+**Short-term (Post-MVP, 3-6 months)**:
+1. **Password Reset**: Email-based password reset flow with secure token expiry
+2. **Email Verification**: Verify email on registration to reduce spam accounts
+3. **Session Management**: View and revoke active sessions from account settings
+
+**Medium-term (6-12 months)**:
+4. **Device Fingerprinting**: Detect suspicious login locations/devices
+   - Track browser fingerprint, geolocation, device type
+   - Alert user on login from new device
+   - Require email/SMS verification for high-risk logins
+5. **Anomaly Detection**: ML-based detection of unusual login patterns
+   - Integrate with Datadog Security Monitoring
+   - Flag velocity attacks (many failed attempts)
+   - Geographic anomaly detection
+6. **OAuth 2.0 Social Login**: Google, Apple Sign-In for easier onboarding
+
+**Long-term (12+ months)**:
+7. **Passwordless Auth (WebAuthn)**: Support for hardware keys and biometric authentication
+   - FIDO2-compliant passkeys
+   - Platform authenticator support (Touch ID, Face ID)
+   - Backup authentication methods
+8. **Risk-Based Auth**: Require step-up authentication for sensitive operations
+   - Transaction amount thresholds
+   - Account settings changes
+   - Payout method modifications
+
+**Prioritization Criteria**:
+- Security impact (reduce attack surface)
+- User experience improvement (reduce friction)
+- Compliance requirements (CCPA, GDPR)
+- Development complexity vs. benefit
 
 ---
 
