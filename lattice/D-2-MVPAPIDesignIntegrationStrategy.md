@@ -29,7 +29,7 @@ review_status: Pending
 
 ## Decision
 
-Implement a RESTful API with 18 essential endpoints organized into 6 resource groups (authentication, users, jobs, location tracking, payments, admin), using JWT authentication with role-based access control (customer/guard/admin), with a strategic integration approach that prioritizes live implementations for high-value demonstrations (Stripe payments, Mapbox GPS, Ably real-time) while mocking services that would delay the MVP (Checkr background checks, Twilio SMS, Persona KYC).
+Implement a RESTful API with 26 essential endpoints organized into 7 resource groups (authentication, users, jobs, location & mapping, payments, admin), using JWT authentication with role-based access control (customer/guard/admin), with a strategic integration approach that prioritizes live implementations for high-value demonstrations (Stripe payments, Mapbox geocoding/maps, Ably real-time) while mocking services that would delay the MVP (Checkr background checks, Twilio SMS, Persona KYC).
 
 ## Rationale
 
@@ -60,7 +60,7 @@ Based on comprehensive API design research from Q-6 and technical architecture d
 
 **Implementation with Passport.js + JWT strategy** provides battle-tested security with excellent NestJS integration.
 
-### 3. 18 Essential Endpoints - Minimal API Surface
+### 3. 26 Essential Endpoints - Minimal API Surface
 
 **Organized by resource for clarity:**
 
@@ -82,9 +82,15 @@ Based on comprehensive API design research from Q-6 and technical architecture d
 - `PATCH /api/jobs/:id/start` - Guard starts job (check-in)
 - `PATCH /api/jobs/:id/complete` - Guard completes job (check-out)
 
-**Location Tracking (2 endpoints)**:
+**Location & Mapping (8 endpoints)** *(See D-6, A-6-1)*:
+- `POST /api/geocoding/forward` - Address → coordinates (for job creation)
+- `POST /api/geocoding/reverse` - Coordinates → address (for map pins)
+- `GET /api/map/config` - Map configuration (Mapbox token, style)
 - `POST /api/jobs/:id/location` - Guard updates current location
-- `GET /api/jobs/:id/location` - Customer views guard location
+- `GET /api/jobs/:id/location` - Customer views guard current location
+- `GET /api/jobs/:id/location/history` - Retrieve location history/route
+- `POST /api/jobs/:id/location/batch` - Batch upload (offline sync)
+- `POST /api/locations/validate-service-area` - Check coverage
 
 **Payments (3 endpoints)**:
 - `POST /api/payments/intent` - Create Stripe payment intent
@@ -94,7 +100,7 @@ Based on comprehensive API design research from Q-6 and technical architecture d
 **Admin (1 endpoint)**:
 - `GET /api/admin/dashboard` - Admin overview (active jobs, guard status, payments)
 
-**Total: 18 endpoints** covering complete customer→guard→payment flow without extraneous features.
+**Total: 26 endpoints** covering complete customer→guard→payment flow with full map interaction support.
 
 **Deferred to post-MVP**: Ratings/reviews, messaging, incident reports, analytics, guard availability management.
 

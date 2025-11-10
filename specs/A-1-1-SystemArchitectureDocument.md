@@ -821,9 +821,413 @@ graph TB
 
 ---
 
-## 13. Future Architecture Evolution
+## 13. Operations & Automation
 
-### 13.1 Microservices Migration Path
+### 13.1 CI/CD Pipeline
+
+**Automated Build & Deployment Pipeline** using GitHub Actions:
+
+```mermaid
+graph LR
+    subgraph Development
+        Dev[Developer Push]
+        PR[Pull Request]
+    end
+
+    subgraph CI Pipeline
+        Lint[Lint & Format<br/>ESLint, Prettier]
+        Test[Unit Tests<br/>Jest]
+        Build[Build<br/>TypeScript]
+        Scan[Security Scan<br/>Dependabot, Snyk]
+    end
+
+    subgraph CD Pipeline - Staging
+        StageDeploy[Deploy to Staging<br/>ECS]
+        E2E[E2E Tests<br/>Playwright]
+        IntegTest[Integration Tests]
+    end
+
+    subgraph CD Pipeline - Production
+        Approve[Manual Approval]
+        ProdDeploy[Deploy to Production<br/>ECS Blue/Green]
+        Smoke[Smoke Tests]
+        Rollback[Auto Rollback<br/>on Failure]
+    end
+
+    Dev --> Lint
+    PR --> Lint
+    Lint --> Test
+    Test --> Build
+    Build --> Scan
+    Scan --> StageDeploy
+    StageDeploy --> E2E
+    E2E --> IntegTest
+    IntegTest --> Approve
+    Approve --> ProdDeploy
+    ProdDeploy --> Smoke
+    Smoke -.-> Rollback
+```
+
+**Pipeline Configuration**:
+```yaml
+# .github/workflows/ci-cd.yml (excerpt)
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Tests
+        run: npm run test:ci
+      - name: Coverage Report
+        run: npm run test:coverage
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Snyk Security Scan
+        uses: snyk/actions/node@master
+      - name: Check Dependencies
+        run: npm audit --audit-level=moderate
+
+  deploy-staging:
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to ECS Staging
+        run: ./scripts/deploy-staging.sh
+
+  deploy-production:
+    needs: [deploy-staging]
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to ECS Production
+        run: ./scripts/deploy-production.sh
+```
+
+### 13.2 Infrastructure as Code
+
+**Terraform Configuration** for reproducible infrastructure:
+
+```
+infrastructure/
+├── terraform/
+│   ├── modules/
+│   │   ├── vpc/
+│   │   ├── ecs/
+│   │   ├── rds/
+│   │   ├── redis/
+│   │   └── alb/
+│   ├── environments/
+│   │   ├── staging/
+│   │   │   └── main.tf
+│   │   └── production/
+│   │       └── main.tf
+│   └── variables.tf
+└── scripts/
+    ├── deploy-staging.sh
+    ├── deploy-production.sh
+    └── rollback.sh
+```
+
+**Key Infrastructure Components**:
+- **VPC**: Isolated network with public/private subnets
+- **ECS Fargate**: Container orchestration with auto-scaling
+- **RDS PostgreSQL**: Multi-AZ deployment with automated backups
+- **ElastiCache Redis**: High-availability configuration
+- **Application Load Balancer**: HTTPS termination, health checks
+- **CloudWatch**: Log aggregation and monitoring
+
+### 13.3 Testing Strategy
+
+**Comprehensive Testing Pyramid**:
+
+| Test Type | Coverage Goal | Tool | Execution |
+|-----------|--------------|------|-----------|
+| **Unit Tests** | >90% | Jest | Every commit |
+| **Integration Tests** | >80% | Jest + Supertest | Every commit |
+| **E2E Tests** | Critical paths | Playwright | Pre-deployment |
+| **API Contract Tests** | 100% endpoints | Pact | Every commit |
+| **Load Tests** | Key endpoints | k6 | Weekly, pre-release |
+| **Security Tests** | OWASP Top 10 | OWASP ZAP | Weekly |
+| **Chaos Tests** | Failure scenarios | Custom scripts | Bi-weekly (staging) |
+
+**Automated Test Execution**:
+```typescript
+// Example test structure
+describe('CreateBookingUseCase', () => {
+  describe('Unit Tests', () => {
+    it('should create booking with valid input', async () => {
+      // Isolated unit test with mocks
+    });
+  });
+
+  describe('Integration Tests', () => {
+    it('should persist booking to database', async () => {
+      // Test with real database (test container)
+    });
+  });
+});
+
+describe('Booking API E2E', () => {
+  it('should complete full booking flow', async () => {
+    // Full end-to-end test via HTTP
+  });
+});
+```
+
+**Test Coverage Requirements**:
+- Domain Layer: 100% coverage (pure logic)
+- Application Layer: 90% coverage (use cases)
+- Infrastructure Layer: 80% coverage (adapters)
+- Presentation Layer: 70% coverage (controllers)
+
+### 13.4 Chaos Engineering
+
+**Failure Testing Strategy** to validate resilience:
+
+| Test Scenario | Frequency | Expected Outcome |
+|---------------|-----------|------------------|
+| **ECS Container Kill** | Bi-weekly | Auto-restart within 30s, no request failures |
+| **Database Connection Loss** | Bi-weekly | Graceful degradation, connection pool retry |
+| **Redis Failure** | Monthly | System continues (no cache), rebuild on recovery |
+| **Network Latency Injection** | Monthly | Request timeout handling, circuit breaker activation |
+| **Third-party API Failure** | Monthly | Fallback logic, queuing for retry |
+| **High CPU Load** | Monthly | Auto-scaling triggers, performance degradation alert |
+| **Disk Space Exhaustion** | Quarterly | Alert triggers, log rotation, cleanup scripts |
+
+**Chaos Testing Tools**:
+- **AWS FIS**: AWS Fault Injection Simulator for infrastructure tests
+- **Custom Scripts**: Kill containers, inject latency
+- **Load Testing**: k6 for traffic spikes
+
+**Example Chaos Test**:
+```bash
+#!/bin/bash
+# chaos-test-container-failure.sh
+
+echo "Starting chaos test: ECS container failure"
+
+# Get running container ID
+TASK_ARN=$(aws ecs list-tasks --cluster aegis-staging --service-name api | jq -r '.taskArns[0]')
+
+# Kill container
+aws ecs stop-task --cluster aegis-staging --task $TASK_ARN --reason "Chaos test"
+
+# Monitor recovery
+echo "Monitoring service recovery..."
+for i in {1..60}; do
+  RUNNING=$(aws ecs describe-services --cluster aegis-staging --services api | jq '.services[0].runningCount')
+  if [ "$RUNNING" -ge 2 ]; then
+    echo "Recovery successful in ${i} seconds"
+    exit 0
+  fi
+  sleep 1
+done
+
+echo "ERROR: Recovery failed"
+exit 1
+```
+
+### 13.5 Cost Monitoring & Optimization
+
+**AWS Cost Management Strategy**:
+
+| Component | Estimated Monthly Cost | Optimization Strategy |
+|-----------|----------------------|----------------------|
+| **ECS Fargate** | $200-400 | Right-size containers, auto-scaling policies |
+| **RDS PostgreSQL** | $150-300 | Reserved instances, read replica optimization |
+| **ElastiCache Redis** | $50-100 | Right-size nodes, eviction policies |
+| **Data Transfer** | $50-150 | CloudFront caching, compression |
+| **S3 Storage** | $20-50 | Lifecycle policies, intelligent tiering |
+| **CloudWatch Logs** | $30-80 | Log retention policies, sampling |
+| **Third-party APIs** | $200-500 | Rate limiting, caching, batching |
+| **Total** | **$700-1,580/month** | Target: <$1,000 for MVP |
+
+**Cost Monitoring Setup**:
+1. **AWS Cost Explorer**: Daily cost tracking by service
+2. **Budget Alerts**:
+   - Alert at 80% of monthly budget ($800)
+   - Critical alert at 100% ($1,000)
+3. **Cost Anomaly Detection**: AWS native anomaly detection
+4. **Tag-based Tracking**: Track costs by environment (staging/prod)
+
+**Cost Optimization Actions**:
+```yaml
+# cost-optimization-checklist.yml
+daily:
+  - Review Cost Explorer dashboard
+  - Check for unused resources (orphaned EBS, idle instances)
+
+weekly:
+  - Analyze CloudWatch metrics for over-provisioning
+  - Review third-party API usage (Stripe, Ably, Mapbox)
+
+monthly:
+  - Right-size EC2/ECS resources based on utilization
+  - Review RDS storage growth, optimize queries
+  - Evaluate reserved instance opportunities
+
+quarterly:
+  - Comprehensive cost review with stakeholders
+  - Evaluate alternative services (cost vs. features)
+```
+
+### 13.6 Security Automation
+
+**Automated Security Measures**:
+
+| Tool | Purpose | Frequency | Action on Finding |
+|------|---------|-----------|-------------------|
+| **Dependabot** | Dependency vulnerability scanning | Real-time | Auto-create PR for patch versions |
+| **Snyk** | Code & container scanning | Every commit | Block PR if critical vulnerabilities |
+| **OWASP ZAP** | Web application security testing | Weekly | Create Jira ticket for findings |
+| **AWS GuardDuty** | Threat detection | Continuous | Alert security team |
+| **AWS Inspector** | Infrastructure assessment | Weekly | Create remediation tasks |
+| **Trivy** | Container image scanning | Build time | Block deployment if critical |
+
+**Vulnerability Response SLA**:
+- **Critical**: Fix within 24 hours
+- **High**: Fix within 7 days
+- **Medium**: Fix within 30 days
+- **Low**: Fix in next sprint
+
+### 13.7 Monitoring Enhancements
+
+**Advanced Monitoring Capabilities**:
+
+**Anomaly Detection** (Datadog):
+- Automatic detection of unusual patterns in:
+  - API response times
+  - Error rates
+  - Database query performance
+  - Payment failure rates
+  - Failed login attempts
+
+**Custom Dashboards**:
+```yaml
+# Key Dashboards
+- Business Metrics:
+    - Bookings created (per hour)
+    - Booking completion rate
+    - Average match time
+    - Guard acceptance rate
+    - Payment success rate
+
+- Technical Metrics:
+    - API p95/p99 latency
+    - Database connection pool utilization
+    - Redis hit rate
+    - ECS CPU/Memory utilization
+    - Error rate by endpoint
+
+- Security Metrics:
+    - Failed login attempts
+    - Rate limit hits
+    - Suspicious IP activity
+    - API token misuse
+```
+
+**On-call Alerting Strategy**:
+```yaml
+# PagerDuty Integration
+severity_levels:
+  P1_critical:
+    - Platform down (>50% error rate)
+    - Database unreachable
+    - Payment processing failed (>10% failure rate)
+    - Security breach detected
+    response_time: Immediate
+
+  P2_high:
+    - API latency >1s (p95)
+    - Error rate 5-10%
+    - Database CPU >90%
+    - Redis memory >95%
+    response_time: 15 minutes
+
+  P3_medium:
+    - Error rate 1-5%
+    - API latency 500ms-1s
+    - Disk space >80%
+    response_time: 1 hour
+
+  P4_low:
+    - Non-critical warnings
+    - Capacity planning alerts
+    response_time: Next business day
+```
+
+### 13.8 Operational Runbooks
+
+**Standard Operating Procedures**:
+
+```
+operations/runbooks/
+├── deployment/
+│   ├── production-deployment.md
+│   ├── rollback-procedure.md
+│   └── database-migration.md
+├── incident-response/
+│   ├── api-down.md
+│   ├── database-performance.md
+│   ├── payment-failures.md
+│   └── security-incident.md
+├── maintenance/
+│   ├── scaling-resources.md
+│   ├── log-rotation.md
+│   └── backup-restoration.md
+└── monitoring/
+    ├── alert-response.md
+    └── dashboard-guide.md
+```
+
+**Example Runbook Excerpt**:
+```markdown
+# Runbook: High API Error Rate
+
+## Symptoms
+- Datadog alert: "API Error Rate >5%"
+- Multiple 500 errors in logs
+- Customer complaints about service unavailable
+
+## Initial Assessment (5 min)
+1. Check Datadog dashboard for error patterns
+2. Review CloudWatch logs for error messages
+3. Verify third-party service status (Stripe, Ably)
+4. Check ECS container health
+
+## Common Causes & Solutions
+1. **Database connection exhaustion**
+   - Check RDS connection count
+   - Action: Scale up RDS or increase connection pool
+
+2. **Memory leak in container**
+   - Check ECS memory metrics
+   - Action: Restart containers, investigate leak
+
+3. **Third-party API failure**
+   - Check Stripe/Ably status pages
+   - Action: Enable fallback/retry logic
+
+## Escalation
+- If unresolved in 30 min → Escalate to senior engineer
+- If revenue impact → Notify product/business stakeholders
+```
+
+---
+
+## 14. Future Architecture Evolution
+
+### 14.1 Microservices Migration Path
 
 Current architecture is a **modular monolith** ready for future microservices extraction:
 
@@ -855,7 +1259,7 @@ graph TB
 - **Matching Service**: When matching algorithm needs independent scaling (high CPU)
 - **Locations Service**: When location tracking needs independent scaling (high write volume)
 
-### 13.2 Multi-Region Deployment
+### 14.2 Multi-Region Deployment
 
 For national scale (5000+ guards, 50+ cities):
 
@@ -896,9 +1300,9 @@ graph TB
 
 ---
 
-## 14. Appendices
+## 15. Appendices
 
-### 14.1 Glossary
+### 15.1 Glossary
 
 | Term | Definition |
 |------|------------|
@@ -910,7 +1314,7 @@ graph TB
 | **TOTP** | Time-based One-Time Password - MFA standard (6-digit codes) |
 | **Escrow** | Holding payment in custody until service completion |
 
-### 14.2 References
+### 15.2 References
 
 - **Decision Documents**: D-1, D-2, D-3, D-4, D-5 in `lattice/` directory
 - **Research Reports**: Q-3, Q-6, Q-7, Q-8, Q-10, Q-11 in `lattice/` directory

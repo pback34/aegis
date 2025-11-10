@@ -61,11 +61,17 @@ Existing white-label marketplace platforms (Sharetribe, Arcadier, Jobber) fundam
 - Tailwind CSS + shadcn/ui enables rapid UI development
 - Edge deployment reduces latency for real-time features
 
-**Mobile Apps: React Native 0.73+ with Expo**
+**Mobile Apps: React Native 0.73+ with Expo + Offline-First Architecture**
 - 60-70% code sharing between iOS and Android reduces development cost
 - Over-the-air updates enable rapid bug fixes without app store approval delays
 - Access to native modules (GPS, camera, push notifications) when needed
 - Faster development timeline (4-6 months vs 8-12 for native)
+- **Offline-first design using WatermelonDB + AsyncStorage**:
+  - Local database sync for job acceptance without connectivity
+  - Buffered GPS updates sync when connection restored
+  - Draft messages and check-ins persist locally
+  - Background sync with conflict resolution
+  - Critical for guards at remote sites with poor cellular coverage
 
 ### 3. Best-in-Class Third-Party Integrations
 
@@ -125,6 +131,13 @@ Rather than building commodity features, integrate proven specialized services:
 - MFA required for admin accounts
 - Field-level encryption for SSN and background check results
 - Comprehensive audit logging for compliance
+
+**Mobile Performance Optimizations**
+- **Battery efficiency**: Lazy loading for large maps, adaptive GPS sampling rates
+- **Network optimization**: Request batching, image compression, aggressive caching
+- **Startup performance**: Code splitting, lazy module loading, splash screen optimization
+- **Memory management**: Component unmounting, image recycling, connection pooling
+- Target: < 3s app launch time, < 5% battery drain per hour during active tracking
 
 ## Alternatives Considered
 
