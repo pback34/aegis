@@ -1,11 +1,11 @@
-import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min, IsPositive } from 'class-validator';
 
 export class AuthorizePaymentDto {
   @IsString()
   bookingId: string;
 
   @IsNumber()
-  @Min(0)
+  @IsPositive()
   amount: number;
 
   @IsOptional()
@@ -29,7 +29,7 @@ export class CapturePaymentDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(0)
+  @IsPositive()
   amount?: number; // optional, defaults to full authorized amount
 }
 
