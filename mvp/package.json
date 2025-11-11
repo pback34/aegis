@@ -1,0 +1,34 @@
+{
+  "name": "aegis-mvp",
+  "version": "1.0.0",
+  "description": "Aegis MVP - Uber for Security Guards",
+  "private": true,
+  "workspaces": [
+    "packages/backend",
+    "packages/frontend"
+  ],
+  "scripts": {
+    "backend:dev": "npm run dev --workspace=packages/backend",
+    "frontend:dev": "npm run dev --workspace=packages/frontend",
+    "backend:build": "npm run build --workspace=packages/backend",
+    "frontend:build": "npm run build --workspace=packages/frontend",
+    "backend:test": "npm run test --workspace=packages/backend",
+    "frontend:test": "npm run test --workspace=packages/frontend",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,js,jsx,json,md}\""
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "prettier": "^3.2.5",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
