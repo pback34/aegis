@@ -21,7 +21,7 @@
     "test:integration:repositories": "jest --testPathPattern=integration/repositories --runInBand",
     "test:all": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli",
+    "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "npm run typeorm -- migration:generate -d ./ormconfig.ts",
     "migration:create": "npm run typeorm -- migration:create",
     "migration:run": "npm run typeorm -- migration:run -d ./ormconfig.ts",
