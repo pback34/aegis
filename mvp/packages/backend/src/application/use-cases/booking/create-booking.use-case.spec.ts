@@ -1,4 +1,3 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { CreateBookingUseCase } from './create-booking.use-case';
 import { IBookingRepository } from '../../ports/booking.repository.interface';
@@ -22,7 +21,7 @@ describe('CreateBookingUseCase', () => {
   let matchingService: SimpleMatchingService;
   let pricingService: PricingService;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     mockBookingRepository = {
       save: jest.fn(),
       findById: jest.fn(),
@@ -50,28 +49,7 @@ describe('CreateBookingUseCase', () => {
     matchingService = new SimpleMatchingService();
     pricingService = new PricingService();
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CreateBookingUseCase,
-        {
-          provide: 'IBookingRepository',
-          useValue: mockBookingRepository,
-        },
-        {
-          provide: 'IUserRepository',
-          useValue: mockUserRepository,
-        },
-        {
-          provide: SimpleMatchingService,
-          useValue: matchingService,
-        },
-        {
-          provide: PricingService,
-          useValue: pricingService,
-        },
-      ],
-    }).compile();
-
+    // Direct instantiation instead of NestJS module
     useCase = new CreateBookingUseCase(
       mockBookingRepository,
       mockUserRepository,
@@ -83,9 +61,9 @@ describe('CreateBookingUseCase', () => {
   describe('Successful Booking Creation', () => {
     it('should create a booking and match with available guard', async () => {
       // Arrange
-      const customerId = UserId.generate().getValue();
+      const customerId = UserId.create().getValue();
       const customer = new Customer({
-        id: new UserId(customerId),
+        id: UserId.fromString(customerId),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword',
         fullName: 'John Doe',
@@ -95,7 +73,7 @@ describe('CreateBookingUseCase', () => {
       });
 
       const guard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('guard@test.com'),
         passwordHash: 'hashedpassword',
         fullName: 'Mike Guard',
@@ -140,9 +118,9 @@ describe('CreateBookingUseCase', () => {
 
     it('should create booking without guard if none available', async () => {
       // Arrange
-      const customerId = UserId.generate().getValue();
+      const customerId = UserId.create().getValue();
       const customer = new Customer({
-        id: new UserId(customerId),
+        id: UserId.fromString(customerId),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword',
         fullName: 'John Doe',
@@ -178,9 +156,9 @@ describe('CreateBookingUseCase', () => {
 
     it('should match with nearest available guard', async () => {
       // Arrange
-      const customerId = UserId.generate().getValue();
+      const customerId = UserId.create().getValue();
       const customer = new Customer({
-        id: new UserId(customerId),
+        id: UserId.fromString(customerId),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword',
         fullName: 'John Doe',
@@ -191,7 +169,7 @@ describe('CreateBookingUseCase', () => {
 
       // Guard in SF (near service location)
       const nearGuard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('near-guard@test.com'),
         passwordHash: 'hashedpassword',
         fullName: 'Near Guard',
@@ -207,7 +185,7 @@ describe('CreateBookingUseCase', () => {
 
       // Guard in LA (far from service location)
       const farGuard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('far-guard@test.com'),
         passwordHash: 'hashedpassword',
         fullName: 'Far Guard',
@@ -249,7 +227,7 @@ describe('CreateBookingUseCase', () => {
   describe('Error Cases', () => {
     it('should throw NotFoundException if customer does not exist', async () => {
       // Arrange
-      const customerId = 'non-existent-id';
+      const customerId = UserId.create().getValue(); // Use valid UUID
       const dto: CreateBookingDto = {
         serviceLocationAddress: '123 Main St',
         serviceLocationLat: 37.7749,
@@ -274,9 +252,9 @@ describe('CreateBookingUseCase', () => {
   describe('Pricing Calculation', () => {
     it('should calculate correct pricing when guard is matched', async () => {
       // Arrange
-      const customerId = UserId.generate().getValue();
+      const customerId = UserId.create().getValue();
       const customer = new Customer({
-        id: new UserId(customerId),
+        id: UserId.fromString(customerId),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword',
         fullName: 'John Doe',
@@ -286,7 +264,7 @@ describe('CreateBookingUseCase', () => {
       });
 
       const guard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('guard@test.com'),
         passwordHash: 'hashedpassword',
         fullName: 'Mike Guard',
@@ -325,9 +303,9 @@ describe('CreateBookingUseCase', () => {
   describe('Date Handling', () => {
     it('should correctly parse ISO date strings', async () => {
       // Arrange
-      const customerId = UserId.generate().getValue();
+      const customerId = UserId.create().getValue();
       const customer = new Customer({
-        id: new UserId(customerId),
+        id: UserId.fromString(customerId),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword',
         fullName: 'John Doe',

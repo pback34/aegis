@@ -32,7 +32,11 @@ export class UserRepository implements IUserRepository {
     }
 
     // Reload with relations
-    return this.findById(user.getId());
+    const reloaded = await this.findById(user.getId());
+    if (!reloaded) {
+      throw new Error('Failed to reload saved user');
+    }
+    return reloaded;
   }
 
   async findById(id: UserId): Promise<User | null> {
@@ -70,7 +74,11 @@ export class UserRepository implements IUserRepository {
       await this.guardProfileRepository.save(guardProfile);
     }
 
-    return this.findById(user.getId());
+    const reloaded = await this.findById(user.getId());
+    if (!reloaded) {
+      throw new Error('Failed to reload updated user');
+    }
+    return reloaded;
   }
 
   async delete(id: UserId): Promise<void> {

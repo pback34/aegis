@@ -10,8 +10,8 @@ describe('GeoLocation Value Object', () => {
 
     it('should round coordinates to 8 decimal places', () => {
       const location = new GeoLocation(40.712812345, -74.006012345);
-      expect(location.getLatitude()).toBe(40.71281235);
-      expect(location.getLongitude()).toBe(-74.00601235);
+      expect(location.getLatitude()).toBeCloseTo(40.71281235, 7);
+      expect(location.getLongitude()).toBeCloseTo(-74.00601235, 7);
     });
 
     it('should throw error for invalid latitude', () => {

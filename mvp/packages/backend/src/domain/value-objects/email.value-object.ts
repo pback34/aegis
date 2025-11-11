@@ -2,10 +2,11 @@ export class Email {
   private readonly value: string;
 
   constructor(email: string) {
-    if (!this.isValid(email)) {
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!this.isValid(normalizedEmail)) {
       throw new Error('Invalid email format');
     }
-    this.value = email.toLowerCase().trim();
+    this.value = normalizedEmail;
   }
 
   private isValid(email: string): boolean {

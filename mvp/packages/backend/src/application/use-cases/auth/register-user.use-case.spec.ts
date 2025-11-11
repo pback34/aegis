@@ -1,4 +1,3 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException } from '@nestjs/common';
 import { RegisterUserUseCase } from './register-user.use-case';
 import { IUserRepository } from '../../ports/user.repository.interface';
@@ -13,7 +12,7 @@ describe('RegisterUserUseCase', () => {
   let useCase: RegisterUserUseCase;
   let mockUserRepository: jest.Mocked<IUserRepository>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     // Create mock repository
     mockUserRepository = {
       save: jest.fn(),
@@ -28,16 +27,7 @@ describe('RegisterUserUseCase', () => {
       updateGuardLocation: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        RegisterUserUseCase,
-        {
-          provide: 'IUserRepository',
-          useValue: mockUserRepository,
-        },
-      ],
-    }).compile();
-
+    // Direct instantiation instead of NestJS module
     useCase = new RegisterUserUseCase(mockUserRepository);
   });
 
@@ -84,7 +74,7 @@ describe('RegisterUserUseCase', () => {
       };
 
       const existingCustomer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email(dto.email),
         passwordHash: 'hashedpassword',
         fullName: 'Existing User',
@@ -218,7 +208,7 @@ describe('RegisterUserUseCase', () => {
       // Assert
       expect(savedGuard!).toBeDefined();
       expect(savedGuard!.getRating()).toBe(5.0); // Default rating
-      expect(savedGuard!.isAvailable()).toBe(false); // Default availability
+      expect(savedGuard!.getIsAvailable()).toBe(false); // Default availability
     });
   });
 

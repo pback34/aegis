@@ -21,7 +21,7 @@ npm run test:all
 
 ## 📊 What's Tested?
 
-### ✅ Unit Tests (Complete)
+### ✅ Unit Tests (Complete) - 123 Tests Total
 - **Authentication Use Cases**
   - `RegisterUserUseCase` - 8 test cases
   - `LoginUserUseCase` - 11 test cases
@@ -30,33 +30,54 @@ npm run test:all
 - **Booking Use Cases**
   - `CreateBookingUseCase` - 8 test cases
 
-- **Mappers**
-  - `UserMapper` - 11 test cases (bidirectional mapping)
+- **Domain Layer**
+  - `BookingEntity` - Various state transitions
+  - `Money` value object - Calculations and validations
+  - `Email` value object - Format validations
+  - `GeoLocation` value object - Coordinate validations
+  - `PricingService` - Pricing calculations
 
-### ✅ Integration Tests (Complete)
+- **Mappers**
+  - `UserMapper` - 9 test cases (bidirectional mapping)
+
+### ✅ Integration Tests (Complete) - 11 Tests Total
 - **UserRepository** - 11 test cases
-  - Customer CRUD operations
-  - Guard CRUD operations with profiles
-  - Guard availability filtering
-  - Location updates
+  - Customer CRUD operations (4 tests)
+  - Guard CRUD operations with profiles (4 tests)
+  - Error handling (3 tests)
 
 ## 🛠️ Setup for Integration Tests
 
 ### Option 1: Local PostgreSQL (Recommended)
 
+#### First-time PostgreSQL Setup
+
+If you just installed PostgreSQL, you'll need to configure it first:
+
 ```bash
-# 1. Create test database
-createdb aegis_mvp_test
+# 1. Set postgres user password (requires sudo)
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 
-# 2. Set environment variables (or use .env.test)
-export TEST_DB_HOST=localhost
-export TEST_DB_PORT=5432
-export TEST_DB_USERNAME=postgres
-export TEST_DB_PASSWORD=postgres
-export TEST_DB_DATABASE=aegis_mvp_test
+# 2. Create test database
+sudo -u postgres psql -c "CREATE DATABASE aegis_mvp_test;"
 
-# 3. Run integration tests
+# 3. Verify database was created
+sudo -u postgres psql -c "\l" | grep aegis_mvp_test
+
+# 4. The .env.test file already has the correct configuration
+# (If not, copy from .env.example)
+```
+
+#### Regular Usage (After Initial Setup)
+
+```bash
+# Just run the integration tests
 npm run test:integration
+
+# The tests will automatically:
+# - Connect to the test database
+# - Create/drop schema as needed
+# - Clean data between tests
 ```
 
 ### Option 2: Docker PostgreSQL
@@ -128,17 +149,67 @@ npm run test:debug
 
 ### Integration Tests Fail with "Connection Refused"
 
-**Solution**: Make sure PostgreSQL is running and test database exists
+**Problem**: Cannot connect to PostgreSQL
+
+**Solutions**:
 
 ```bash
-# Check if PostgreSQL is running
+# 1. Check if PostgreSQL is running
+systemctl is-active postgresql
+# or
 pg_isready
 
-# Create test database if missing
-createdb aegis_mvp_test
+# 2. Start PostgreSQL if not running
+sudo systemctl start postgresql
 
-# Verify connection
-psql -U postgres -d aegis_mvp_test -c "SELECT 1;"
+# 3. Check if test database exists
+sudo -u postgres psql -l | grep aegis_mvp_test
+
+# 4. Create test database if missing
+sudo -u postgres psql -c "CREATE DATABASE aegis_mvp_test;"
+```
+
+### Integration Tests Fail with "Password Authentication Failed"
+
+**Problem**: PostgreSQL rejects the password
+
+**Solutions**:
+
+```bash
+# Option 1: Set postgres user password
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+
+# Option 2: Use PGPASSWORD environment variable
+PGPASSWORD=postgres psql -U postgres -h localhost -d aegis_mvp_test -c "SELECT 1;"
+
+# Option 3: Use peer authentication (no password needed)
+# Edit /etc/postgresql/*/main/pg_hba.conf
+# Change "md5" to "trust" for local connections (development only!)
+```
+
+### Tests Fail with "Type 'null' is not assignable to type 'User'"
+
+**Problem**: Repository methods return `User | null` but code expects `User`
+
+**Solution**: This has been fixed in `user.repository.ts` by adding null checks:
+
+```typescript
+const reloaded = await this.findById(user.getId());
+if (!reloaded) {
+  throw new Error('Failed to reload saved user');
+}
+return reloaded;
+```
+
+### Tests Fail with Rating Being String Instead of Number
+
+**Problem**: PostgreSQL decimal columns return strings
+
+**Solution**: This has been fixed in `user.mapper.ts` by adding `Number()` conversions:
+
+```typescript
+rating: Number(guardProfile.rating),
+hourlyRate: guardProfile.hourly_rate ? new Money(Number(guardProfile.hourly_rate)) : new Money(0),
 ```
 
 ### Unit Tests Fail with "Cannot find module"
@@ -161,20 +232,25 @@ testTimeout: 30000, // 30 seconds
 
 ### Unit Test Template
 
-```typescript
-import { Test, TestingModule } from '@nestjs/testing';
+**Important**: For use case unit tests, we use **direct instantiation** instead of NestJS Test modules to keep tests fast and focused.
 
+```typescript
 describe('MyUseCase', () => {
   let useCase: MyUseCase;
   let mockRepository: jest.Mocked<IMyRepository>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
+    // Create mock repository
     mockRepository = {
       save: jest.fn(),
       findById: jest.fn(),
+      findByEmail: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
       // ... other methods
     };
 
+    // Direct instantiation (no NestJS DI)
     useCase = new MyUseCase(mockRepository);
   });
 
@@ -201,6 +277,12 @@ describe('MyUseCase', () => {
   });
 });
 ```
+
+**Why Direct Instantiation?**
+- ⚡ **Faster**: No NestJS module compilation overhead
+- 🎯 **Focused**: Tests only the use case logic
+- 🔍 **Clearer**: Explicit dependency injection
+- 🐛 **Easier to Debug**: No DI magic to trace through
 
 ### Integration Test Template
 
