@@ -17,3 +17,6 @@ export * from './location/get-current-location.use-case';
 // Payment use cases
 export * from './payment/authorize-payment.use-case';
 export * from './payment/capture-payment.use-case';
+
+// User use cases
+export * from './user/update-user-profile.use-case';

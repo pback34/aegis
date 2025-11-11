@@ -20,7 +20,7 @@ export class CompleteBookingUseCase {
     bookingId: string,
   ): Promise<CompleteBookingResponseDto> {
     // Verify guard exists
-    const guard = await this.userRepository.findGuardById(new UserId(guardId));
+    const guard = await this.userRepository.findGuardById(UserId.fromString(guardId));
     if (!guard) {
       throw new NotFoundException('Guard not found');
     }
@@ -32,17 +32,15 @@ export class CompleteBookingUseCase {
     }
 
     // Verify guard is assigned to this booking
-    if (
-      !booking.getGuardId() ||
-      booking.getGuardId().getValue() !== guardId
-    ) {
+    const bookingGuardId = booking.getGuardId();
+    if (!bookingGuardId || bookingGuardId.getValue() !== guardId) {
       throw new ForbiddenException(
         'You are not assigned to this booking',
       );
     }
 
     // Complete booking
-    booking.complete();
+    booking.completeJob();
 
     // Update guard availability
     guard.setAvailable(true);
@@ -53,10 +51,10 @@ export class CompleteBookingUseCase {
 
     // Calculate actual hours
     let actualHours: number | undefined;
-    if (updatedBooking.getActualStart() && updatedBooking.getActualEnd()) {
-      const durationMs =
-        updatedBooking.getActualEnd().getTime() -
-        updatedBooking.getActualStart().getTime();
+    const actualStart = updatedBooking.getActualStart();
+    const actualEnd = updatedBooking.getActualEnd();
+    if (actualStart && actualEnd) {
+      const durationMs = actualEnd.getTime() - actualStart.getTime();
       actualHours = durationMs / (1000 * 60 * 60); // convert to hours
     }
 

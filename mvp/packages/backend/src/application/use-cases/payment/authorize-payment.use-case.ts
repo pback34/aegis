@@ -37,9 +37,11 @@ export class AuthorizePaymentUseCase {
     const customer = await this.userRepository.findCustomerById(
       booking.getCustomerId(),
     );
-    const guard = await this.userRepository.findGuardById(
-      booking.getGuardId(),
-    );
+    const guardId = booking.getGuardId();
+    if (!guardId) {
+      throw new Error('Cannot authorize payment - no guard assigned');
+    }
+    const guard = await this.userRepository.findGuardById(guardId);
 
     if (!customer || !guard) {
       throw new NotFoundException('Customer or guard not found');
@@ -47,7 +49,8 @@ export class AuthorizePaymentUseCase {
 
     // Calculate payment breakdown
     const amount = new Money(dto.amount, dto.currency || 'USD');
-    const { platformFee, guardPayout } = this.pricingService.calculatePaymentBreakdown(amount);
+    const platformFee = this.pricingService.calculatePlatformFee(amount);
+    const guardPayout = this.pricingService.calculateGuardPayout(amount);
 
     // Authorize payment via Stripe
     const paymentIntent = await this.paymentGateway.authorizePayment(
@@ -78,7 +81,7 @@ export class AuthorizePaymentUseCase {
     return {
       paymentId: savedPayment.getId(),
       bookingId: savedPayment.getBookingId(),
-      stripePaymentIntentId: savedPayment.getStripePaymentIntentId(),
+      stripePaymentIntentId: savedPayment.getStripePaymentIntentId() || '',
       clientSecret: paymentIntent.clientSecret,
       amount: savedPayment.getAmount().getAmount(),
       status: savedPayment.getStatus(),

@@ -35,8 +35,12 @@ export class CapturePaymentUseCase {
       : payment.getAmount();
 
     // Capture payment via Stripe
+    const stripePaymentIntentId = payment.getStripePaymentIntentId();
+    if (!stripePaymentIntentId) {
+      throw new BadRequestException('Payment intent ID not found');
+    }
     const captureResult = await this.paymentGateway.capturePayment(
-      payment.getStripePaymentIntentId(),
+      stripePaymentIntentId,
       amountToCapture,
     );
 
@@ -56,7 +60,7 @@ export class CapturePaymentUseCase {
     return {
       paymentId: updatedPayment.getId(),
       bookingId: updatedPayment.getBookingId(),
-      stripePaymentIntentId: updatedPayment.getStripePaymentIntentId(),
+      stripePaymentIntentId: updatedPayment.getStripePaymentIntentId() || '',
       amount: updatedPayment.getAmount().getAmount(),
       platformFee: updatedPayment.getPlatformFee().getAmount(),
       guardPayout: updatedPayment.getGuardPayout().getAmount(),
