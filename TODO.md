@@ -1,868 +1,510 @@
-# TODO - Phase 3 Implementation
+# TODO for Next Session - Phase 3 Implementation
 
-## Current Status: Phase 3 - Core Services & Matching Logic
-
-**Start Date**: November 11, 2025
-**Target Completion**: 4 weeks (December 9, 2025)
-**Status**: 🟡 In Progress
+**Last Updated**: 2025-11-11
+**Current Branch**: `MVP`
+**Status**: Phase 2 Complete ✅, Ready for Phase 3
 
 ---
 
-## Overview
+## 📋 Quick Status Overview
 
-Phase 3 focuses on implementing the core business logic that powers the Aegis platform:
-- Intelligent guard matching algorithm
-- Real-time location tracking
-- Notification and messaging infrastructure
-- Booking lifecycle management
-- Mobile app foundation
+### ✅ Completed (Phases 1 & 2)
 
-**Prerequisites**: Phase 1 (Infrastructure) and Phase 2 (Core APIs) must be completed first.
-**Note**: Since this is a fresh repository, we'll need to set up the foundational structure first.
+**Week 1: Foundation & Domain Layer**
+- ✅ Domain entities (User, Customer, Guard, Booking, Payment)
+- ✅ Value objects (Email, UserId, Money, GeoLocation)
+- ✅ Domain services (SimpleMatchingService, PricingService)
+- ✅ Domain events (BookingRequested, GuardMatched, etc.)
+- ✅ All domain layer fully tested (>90% coverage)
 
----
+**Week 2: Application Layer & Database**
+- ✅ Use cases implemented:
+  - Auth: `RegisterUserUseCase`, `LoginUserUseCase`, `RefreshTokenUseCase`
+  - Booking: `CreateBookingUseCase`
+- ✅ DTOs with validation
+- ✅ Repository interfaces (ports)
+- ✅ PostgreSQL schema (5 tables) with TypeORM
+- ✅ Repository implementations (UserRepository with integration tests)
+- ✅ Mappers (UserMapper with bidirectional tests)
+- ✅ **134 tests passing** (123 unit + 11 integration)
 
-## Week 1: Foundation & Matching Service
+### 🎯 Next Up: Phase 3 (Week 3)
 
-### 1.1 Project Initialization ⚙️
-- [ ] Initialize Node.js backend project
-  ```bash
-  mkdir backend && cd backend
-  npm init -y
-  npm install @nestjs/core @nestjs/common @nestjs/platform-express
-  npm install --save-dev typescript @types/node ts-node
-  ```
-- [ ] Set up NestJS project structure
-- [ ] Configure TypeScript (tsconfig.json)
-- [ ] Set up ESLint and Prettier
-- [ ] Create .env template and configuration
-- [ ] Set up Prisma ORM
-  ```bash
-  npm install prisma @prisma/client
-  npx prisma init
-  ```
-- [ ] Create Docker Compose for local development (PostgreSQL + Redis)
+**Goal**: External Services & NestJS Infrastructure
 
-### 1.2 Database Schema 📊
-- [ ] Design Prisma schema for Phase 3:
-  - User model (with role: customer | guard | admin)
-  - GuardProfile model (skills, certifications, hourly_rate)
-  - Booking model (with status enum)
-  - Location model (with PostGIS geometry)
-  - Message model
-  - Rating model
-- [ ] Create initial migration
-  ```bash
-  npx prisma migrate dev --name init
-  ```
-- [ ] Set up PostGIS extension in PostgreSQL
-- [ ] Seed database with sample guards and locations
+According to `MVP_IMPLEMENTATION_PLAN.md` Week 3, you need to implement:
 
-### 1.3 Matching Service Implementation 🎯
-**Priority: HIGH** - This is the core differentiator
-
-#### File Structure:
-```
-backend/src/
-├── matching/
-│   ├── matching.module.ts
-│   ├── matching.service.ts
-│   ├── matching.controller.ts
-│   ├── algorithms/
-│   │   ├── distance-calculator.ts       ← Haversine formula
-│   │   ├── geospatial-indexer.ts        ← H3 hexagonal grid
-│   │   ├── skill-matcher.ts             ← Skill/certification matching
-│   │   ├── availability-checker.ts      ← Real-time availability
-│   │   └── scoring-algorithm.ts         ← Multi-criteria scoring
-│   ├── dto/
-│   │   ├── match-request.dto.ts
-│   │   ├── match-response.dto.ts
-│   │   └── guard-match.dto.ts
-│   └── tests/
-│       ├── matching.service.spec.ts
-│       └── algorithms/
-│           ├── distance-calculator.spec.ts
-│           └── scoring-algorithm.spec.ts
-```
-
-#### Implementation Checklist:
-- [ ] **Install dependencies**
-  ```bash
-  npm install h3-js geolib ioredis bull
-  ```
-
-- [ ] **Distance Calculator** (distance-calculator.ts)
-  - [ ] Implement Haversine formula for lat/lng distance
-  - [ ] Add unit tests (known distance checks)
-  - [ ] Performance: should calculate 1000 distances in <10ms
-
-- [ ] **Geospatial Indexer** (geospatial-indexer.ts)
-  - [ ] Integrate H3 hexagonal grid library
-  - [ ] Convert lat/lng to H3 index at resolution 9 (~0.1km²)
-  - [ ] Implement k-ring expansion for nearby hex search
-  - [ ] Cache guard locations in Redis with H3 indexes
-  - [ ] Example: `GEOADD guards:available {lng} {lat} {guardId}`
-
-- [ ] **Skill Matcher** (skill-matcher.ts)
-  - [ ] Exact match scoring (required skills)
-  - [ ] Bonus scoring (additional skills)
-  - [ ] Certification validation
-  - [ ] Minimum requirements filter
-
-- [ ] **Availability Checker** (availability-checker.ts)
-  - [ ] Check guard online status (Redis: `guards:online:{guardId}`)
-  - [ ] Verify no overlapping bookings
-  - [ ] Check working hours preferences
-  - [ ] Handle guard capacity (max concurrent bookings)
-
-- [ ] **Scoring Algorithm** (scoring-algorithm.ts)
-  - [ ] Implement weighted scoring:
-    ```typescript
-    score = (distance_score * 0.4) +
-            (rating_score * 0.3) +
-            (experience_score * 0.2) +
-            (price_score * 0.1)
-    ```
-  - [ ] Normalize each factor to 0-100 scale
-  - [ ] Sort candidates by total score
-  - [ ] Return top 10 matches
-
-- [ ] **Main Matching Service** (matching.service.ts)
-  - [ ] `findGuards()` method with filtering pipeline:
-    1. Get H3 hex for customer location
-    2. Query guards in nearby hexes (expand k-ring if needed)
-    3. Filter by availability
-    4. Filter by skills/certifications
-    5. Calculate scores for remaining candidates
-    6. Return ranked results
-  - [ ] `requestGuard()` method for sending match request
-  - [ ] Implement timeout (2 minutes for guard to accept)
-  - [ ] Fallback: expand search radius if no matches
-  - [ ] Cache results for 5 minutes
-
-- [ ] **API Controller** (matching.controller.ts)
-  - [ ] POST `/api/v1/matching/find-guards`
-  - [ ] POST `/api/v1/matching/request-guard`
-  - [ ] GET `/api/v1/matching/available-count` (for analytics)
-
-- [ ] **Testing**
-  - [ ] Unit tests for each algorithm
-  - [ ] Integration test: full matching flow
-  - [ ] Test scenarios:
-    - No guards available
-    - All guards busy
-    - Multiple qualified candidates
-    - Edge cases (poles, date line)
-  - [ ] Performance test: 100 concurrent match requests
-
-#### Success Criteria:
-- ✅ Match finding completes in <3 seconds (p95)
-- ✅ Scoring algorithm produces consistent results
-- ✅ Handles 1000+ guards efficiently
-- ✅ 90% test coverage on matching logic
+1. **Payment Integration** (Days 1-2)
+2. **Real-Time Location Streaming** (Day 3)
+3. **Authentication & Authorization Infrastructure** (Days 4-5)
 
 ---
 
-## Week 2: Location & Real-Time Services
+## 🔑 Critical Things to Know
 
-### 2.1 Location Service 📍
-**Priority: HIGH** - Critical for tracking and ETA
+### 1. Testing Pattern - VERY IMPORTANT!
 
-#### File Structure:
-```
-backend/src/
-├── location/
-│   ├── location.module.ts
-│   ├── location.service.ts
-│   ├── location.gateway.ts          ← WebSocket gateway
-│   ├── location.controller.ts
-│   ├── dto/
-│   │   ├── location-update.dto.ts
-│   │   └── location-query.dto.ts
-│   └── tests/
-│       └── location.service.spec.ts
-```
+We use **direct instantiation** for use case unit tests, NOT `Test.createTestingModule()`:
 
-#### Implementation Checklist:
-- [ ] **Install dependencies**
-  ```bash
-  npm install @nestjs/websockets @nestjs/platform-socket.io socket.io ioredis
-  ```
+```typescript
+// ✅ DO THIS (what we're doing)
+beforeEach(() => {
+  mockRepository = { save: jest.fn(), findById: jest.fn() };
+  useCase = new MyUseCase(mockRepository);
+});
 
-- [ ] **Location Service** (location.service.ts)
-  - [ ] Store location in Redis Geo data structure
-    ```typescript
-    redis.geoadd('guards:locations', longitude, latitude, guardId)
-    ```
-  - [ ] Store location history in PostgreSQL/TimescaleDB
-  - [ ] Calculate ETA based on distance and traffic (integrate MapBox API)
-  - [ ] Geofencing: detect when guard enters/exits booking location
-  - [ ] Privacy controls: only share location during active booking
-
-- [ ] **WebSocket Gateway** (location.gateway.ts)
-  - [ ] Handle `location:update` event from guard app
-  - [ ] Validate location accuracy and timestamp
-  - [ ] Emit `location:guard-position` to customer
-  - [ ] Emit `location:guard-arrived` when within geofence
-  - [ ] Handle connection/disconnection
-  - [ ] Implement room-based broadcasting (per booking)
-
-- [ ] **API Endpoints** (location.controller.ts)
-  - [ ] GET `/api/v1/location/guard/:guardId` - Get current location
-  - [ ] GET `/api/v1/location/history/:bookingId` - Location trail
-  - [ ] GET `/api/v1/location/eta/:bookingId` - Get current ETA
-
-- [ ] **Testing**
-  - [ ] WebSocket connection tests
-  - [ ] Location update rate limit tests
-  - [ ] Geofencing accuracy tests
-  - [ ] ETA calculation validation
-
-#### Success Criteria:
-- ✅ WebSocket latency <100ms
-- ✅ Location updates every 10 seconds
-- ✅ ETA accuracy within ±3 minutes
-- ✅ Handles 500 concurrent connections
-
-### 2.2 Notification Service 🔔
-**Priority: HIGH** - Essential for user engagement
-
-#### File Structure:
-```
-backend/src/
-├── notification/
-│   ├── notification.module.ts
-│   ├── notification.service.ts
-│   ├── notification.controller.ts
-│   ├── providers/
-│   │   ├── fcm.provider.ts          ← Firebase Cloud Messaging
-│   │   ├── sms.provider.ts          ← Twilio SMS
-│   │   └── email.provider.ts        ← SendGrid email
-│   ├── templates/
-│   │   ├── booking-confirmed.ts
-│   │   ├── guard-matched.ts
-│   │   ├── guard-arriving.ts
-│   │   └── booking-completed.ts
-│   ├── dto/
-│   │   └── send-notification.dto.ts
-│   └── tests/
-│       └── notification.service.spec.ts
+// ❌ DON'T DO THIS (slow, unnecessary for unit tests)
+const module = await Test.createTestingModule({
+  providers: [MyUseCase, { provide: 'IRepo', useValue: mock }]
+}).compile();
 ```
 
-#### Implementation Checklist:
-- [ ] **Install dependencies**
-  ```bash
-  npm install firebase-admin twilio @sendgrid/mail
-  ```
+**Why?** ~10x faster, simpler, more focused tests. See `TESTING.md` for full rationale.
 
-- [ ] **Firebase Cloud Messaging Provider** (fcm.provider.ts)
-  - [ ] Initialize Firebase Admin SDK
-  - [ ] Send push notification method
-  - [ ] Handle device token registration
-  - [ ] Batch notifications for efficiency
-  - [ ] Track delivery status
+**When to use Test.createTestingModule()?**
+- Integration tests with real infrastructure
+- Testing NestJS-specific features (guards, interceptors, controllers)
 
-- [ ] **SMS Provider** (sms.provider.ts)
-  - [ ] Initialize Twilio client
-  - [ ] Send SMS method
-  - [ ] Template rendering
-  - [ ] Track delivery status
-  - [ ] Cost tracking
+### 2. TypeORM Quirks Fixed
 
-- [ ] **Email Provider** (email.provider.ts)
-  - [ ] Initialize SendGrid client
-  - [ ] HTML email templates
-  - [ ] Send transactional email
-  - [ ] Track opens and clicks
+**Decimal Types Return Strings**: We fixed this in `user.mapper.ts`
 
-- [ ] **Notification Service** (notification.service.ts)
-  - [ ] `sendNotification()` multi-channel method
-  - [ ] User preference checking (push vs SMS vs email)
-  - [ ] Retry logic for failed deliveries
-  - [ ] Notification history storage
-  - [ ] Batch processing for multiple recipients
-
-- [ ] **Templates** (templates/*.ts)
-  - [ ] Create templates for each notification type
-  - [ ] Variable substitution (guard name, ETA, etc.)
-  - [ ] Multi-language support (i18n ready)
-
-- [ ] **Testing**
-  - [ ] Mock external services (FCM, Twilio, SendGrid)
-  - [ ] Test each notification type
-  - [ ] Test retry logic
-  - [ ] Test preference filtering
-
-#### Success Criteria:
-- ✅ 95%+ delivery rate for push notifications
-- ✅ Notification sent within 5 seconds of event
-- ✅ Proper fallback (push → SMS → email)
-- ✅ All templates tested
-
-### 2.3 Messaging Service 💬
-**Priority: MEDIUM** - Important for customer-guard communication
-
-#### File Structure:
-```
-backend/src/
-├── messaging/
-│   ├── messaging.module.ts
-│   ├── messaging.service.ts
-│   ├── messaging.gateway.ts
-│   ├── messaging.controller.ts
-│   ├── dto/
-│   │   ├── send-message.dto.ts
-│   │   ├── message.dto.ts
-│   │   └── conversation.dto.ts
-│   └── tests/
-│       └── messaging.service.spec.ts
+```typescript
+// Always convert decimal columns to numbers
+rating: Number(guardProfile.rating),
+hourlyRate: new Money(Number(guardProfile.hourly_rate)),
 ```
 
-#### Implementation Checklist:
-- [ ] **Database Models**
-  - [ ] Conversation model (booking_id, participants)
-  - [ ] Message model (content, sender, timestamp, read_status)
-  - [ ] Add Prisma migrations
+**Null Safety in Repositories**: We fixed this in `user.repository.ts`
 
-- [ ] **WebSocket Gateway** (messaging.gateway.ts)
-  - [ ] Handle `message:send` event
-  - [ ] Emit `message:received` to recipient
-  - [ ] Emit `message:typing` indicator
-  - [ ] Mark messages as read
-  - [ ] Room-based conversations (booking ID as room)
+```typescript
+// Always check for null after findById
+const reloaded = await this.findById(user.getId());
+if (!reloaded) {
+  throw new Error('Failed to reload saved user');
+}
+return reloaded;
+```
 
-- [ ] **Messaging Service** (messaging.service.ts)
-  - [ ] Create conversation on booking confirmation
-  - [ ] Send message (persist + emit)
-  - [ ] Get conversation history
-  - [ ] Mark messages as read
-  - [ ] Image/file upload to S3
-  - [ ] Emergency message flagging
+### 3. Auth Implementation Status
 
-- [ ] **API Endpoints**
-  - [ ] GET `/api/v1/messaging/conversations` - List conversations
-  - [ ] GET `/api/v1/messaging/conversations/:id/messages` - Message history
-  - [ ] POST `/api/v1/messaging/conversations/:id/messages` - Send message (REST fallback)
-  - [ ] PUT `/api/v1/messaging/messages/:id/read` - Mark as read
+**Current State**: Auth use cases implement JWT/bcrypt internally (see `login-user.use-case.ts:16-50`)
 
-- [ ] **Testing**
-  - [ ] WebSocket message delivery
-  - [ ] Typing indicator tests
-  - [ ] Read receipt tests
-  - [ ] File upload tests
+**What's Needed for Phase 3**:
+- Extract JWT logic into proper NestJS auth infrastructure
+- Create `JwtAuthGuard` using Passport JWT strategy
+- Create `RolesGuard` for RBAC
+- Add auth decorators (`@Public()`, `@Roles()`, `@CurrentUser()`)
+- Keep use cases pure - move token generation to controllers or a dedicated auth service
 
-#### Success Criteria:
-- ✅ Real-time message delivery (<1 second)
-- ✅ Offline message queue (delivered on reconnect)
-- ✅ File sharing works (images, PDFs)
+### 4. Repository Implementations Needed
+
+Current state:
+- ✅ `UserRepository` - fully implemented with 11 integration tests
+- ❌ `BookingRepository` - interface exists, implementation needed
+- ❌ `PaymentRepository` - interface exists, implementation needed
+- ❌ `LocationUpdateRepository` - not yet defined
+
+You'll need these for Phase 3 and 4.
 
 ---
 
-## Week 3: Booking Lifecycle & Events
+## 📁 Project Structure Reference
 
-### 3.1 Booking State Machine 🎰
-**Priority: HIGH** - Core business logic
-
-#### File Structure:
 ```
-backend/src/
-├── booking/
-│   ├── booking.module.ts
-│   ├── booking.service.ts
-│   ├── booking.controller.ts
-│   ├── state-machine/
-│   │   ├── booking-state.machine.ts
-│   │   ├── transitions.ts
-│   │   └── actions.ts
-│   ├── dto/
-│   │   ├── create-booking.dto.ts
-│   │   ├── update-booking.dto.ts
-│   │   └── booking-response.dto.ts
-│   └── tests/
-│       └── booking.service.spec.ts
-```
-
-#### Implementation Checklist:
-- [ ] **Install dependencies**
-  ```bash
-  npm install xstate  # State machine library
-  ```
-
-- [ ] **State Machine Definition** (booking-state.machine.ts)
-  - [ ] Define all booking states (see MVP_IMPLEMENTATION_PLAN.md)
-  - [ ] Define valid transitions
-  - [ ] Add guards (conditions for transitions)
-  - [ ] Add actions (side effects on transition)
-  - [ ] Implement timeout handling
-
-- [ ] **Booking Service** (booking.service.ts)
-  - [ ] `createBooking()` - Initialize state machine
-  - [ ] `transitionBooking()` - Handle state changes
-  - [ ] `acceptBooking()` - Guard accepts (MATCHED → CONFIRMED)
-  - [ ] `declineBooking()` - Guard declines (MATCHED → SEARCHING)
-  - [ ] `startBooking()` - Service starts (GUARD_ARRIVED → IN_PROGRESS)
-  - [ ] `completeBooking()` - Service ends (IN_PROGRESS → COMPLETED)
-  - [ ] `cancelBooking()` - Handle cancellations with fees
-  - [ ] Event emission on each transition
-
-- [ ] **Timeout Handling**
-  - [ ] Match expiry: 2 minutes (no guard found → EXPIRED)
-  - [ ] Guard acceptance window: 30 seconds
-  - [ ] Use Bull queue for scheduled jobs
-
-- [ ] **Cancellation Policy**
-  - [ ] Free cancellation: >2 hours before
-  - [ ] 50% fee: 30 min - 2 hours before
-  - [ ] Full charge: <30 min or after start
-
-- [ ] **API Endpoints**
-  - [ ] PUT `/api/v1/bookings/:id/accept` - Guard accepts
-  - [ ] PUT `/api/v1/bookings/:id/decline` - Guard declines
-  - [ ] PUT `/api/v1/bookings/:id/start` - Start service
-  - [ ] PUT `/api/v1/bookings/:id/complete` - Complete service
-  - [ ] PUT `/api/v1/bookings/:id/cancel` - Cancel booking
-  - [ ] GET `/api/v1/bookings/:id/timeline` - Event history
-
-- [ ] **Testing**
-  - [ ] Test all state transitions
-  - [ ] Test invalid transitions (should error)
-  - [ ] Test timeout scenarios
-  - [ ] Test cancellation fees
-  - [ ] Integration test: full booking lifecycle
-
-#### Success Criteria:
-- ✅ All state transitions validated
-- ✅ No invalid state transitions possible
-- ✅ Timeouts execute correctly
-- ✅ Cancellation fees calculated accurately
-
-### 3.2 Event-Driven Architecture 📡
-**Priority: MEDIUM** - For scalability and decoupling
-
-#### File Structure:
-```
-backend/src/
-├── events/
-│   ├── events.module.ts
-│   ├── kafka/
-│   │   ├── kafka.module.ts
-│   │   ├── kafka.service.ts
-│   │   ├── producers/
-│   │   │   ├── booking.producer.ts
-│   │   │   ├── location.producer.ts
-│   │   │   └── notification.producer.ts
-│   │   ├── consumers/
-│   │   │   ├── booking.consumer.ts
-│   │   │   ├── analytics.consumer.ts
-│   │   │   └── notification.consumer.ts
-│   │   └── schemas/
-│   │       ├── booking-event.schema.ts
-│   │       └── location-event.schema.ts
+mvp/packages/backend/
+├── src/
+│   ├── domain/                    # ✅ Complete
+│   │   ├── entities/
+│   │   ├── value-objects/
+│   │   ├── services/
+│   │   └── events/
+│   ├── application/               # ✅ Partially complete
+│   │   ├── use-cases/
+│   │   │   ├── auth/             # ✅ 3 use cases done
+│   │   │   └── booking/          # ✅ 1 use case done
+│   │   ├── dtos/                 # ✅ Auth & Booking DTOs
+│   │   └── ports/                # ✅ Repository interfaces
+│   ├── infrastructure/            # 🟡 Partially complete
+│   │   ├── database/             # ✅ Entities defined
+│   │   ├── repositories/         # 🟡 UserRepository only
+│   │   ├── auth/                 # ❌ TODO: Guards, strategies
+│   │   ├── payment/              # ❌ TODO: Stripe adapter
+│   │   └── realtime/             # ❌ TODO: Ably adapter
+│   └── presentation/              # ❌ TODO: Controllers
+│       ├── controllers/
+│       ├── middleware/
+│       └── dto-validators/
+└── test/
+    ├── integration/               # ✅ UserRepository tests
+    └── setup-integration.ts       # ✅ Working test DB setup
 ```
 
-#### Implementation Checklist:
-- [ ] **Install dependencies**
-  ```bash
-  npm install kafkajs
-  # Or use AWS Kinesis SDK if using AWS
-  npm install aws-sdk
-  ```
+---
 
-- [ ] **Kafka Setup** (can be deferred or use AWS Kinesis)
-  - [ ] Docker Compose Kafka cluster (3 brokers)
-  - [ ] Create topics: `booking-events`, `location-events`, `notification-events`
-  - [ ] Configure partitioning strategy
+## 🚀 Phase 3 Implementation Guide
 
-- [ ] **Event Schemas** (schemas/*.ts)
-  - [ ] Define event types for each domain
-  - [ ] Use Zod or Joi for validation
-  - [ ] Version events (v1, v2, etc.)
+### Task 1: Payment Integration (Stripe)
 
-- [ ] **Producers** (producers/*.ts)
-  - [ ] Publish events on booking transitions
-  - [ ] Publish location updates
-  - [ ] Publish notification requests
-  - [ ] Add correlation IDs for tracing
-
-- [ ] **Consumers** (consumers/*.ts)
-  - [ ] Booking consumer: trigger notifications
-  - [ ] Analytics consumer: update metrics
-  - [ ] Notification consumer: send to users
-  - [ ] Implement retry logic and DLQ
-
-- [ ] **Testing**
-  - [ ] Event publish/consume integration tests
-  - [ ] Schema validation tests
-  - [ ] Retry logic tests
-
-#### Success Criteria:
-- ✅ Events published within 100ms
-- ✅ No message loss (at-least-once delivery)
-- ✅ Dead letter queue handles failures
-
-**Note**: This can be simplified for MVP by using in-memory events or Bull queues instead of Kafka.
-
-### 3.3 Rating & Review Service ⭐
-**Priority: MEDIUM** - Important for quality and trust
-
-#### File Structure:
+**Files to Create:**
 ```
-backend/src/
-├── rating/
-│   ├── rating.module.ts
-│   ├── rating.service.ts
-│   ├── rating.controller.ts
-│   ├── dto/
-│   │   ├── create-rating.dto.ts
-│   │   └── rating-response.dto.ts
-│   └── tests/
-│       └── rating.service.spec.ts
+src/infrastructure/payment/
+  ├── stripe-payment-gateway.adapter.ts
+  ├── stripe-payment-gateway.adapter.spec.ts (unit tests)
+  └── stripe-payment-gateway.integration.spec.ts
 ```
 
-#### Implementation Checklist:
-- [ ] **Database Models**
-  - [ ] Rating model (rater, ratee, booking, stars, review, tags)
-  - [ ] Add to Prisma schema and migrate
+**What to Implement:**
 
-- [ ] **Rating Service** (rating.service.ts)
-  - [ ] `submitRating()` - Create rating (validate: must be after booking completion)
-  - [ ] `getGuardRatings()` - Get all ratings for a guard
-  - [ ] `calculateAverageRating()` - Update guard's average rating
-  - [ ] `getCustomerRatings()` - Guards can see customer ratings too
-  - [ ] Moderation: flag inappropriate reviews
+1. Create `IPaymentGateway` interface in `src/application/ports/`:
+```typescript
+export interface IPaymentGateway {
+  authorizePayment(params: AuthorizePaymentParams): Promise<PaymentAuthorization>;
+  capturePayment(paymentIntentId: string): Promise<PaymentCapture>;
+  refundPayment(paymentIntentId: string): Promise<PaymentRefund>;
+}
+```
 
-- [ ] **API Endpoints**
-  - [ ] POST `/api/v1/bookings/:id/rate` - Submit rating
-  - [ ] GET `/api/v1/guards/:id/ratings` - Get guard ratings
-  - [ ] GET `/api/v1/users/me/ratings` - Get my received ratings
+2. Implement `StripePaymentGatewayAdapter`:
+   - Use `stripe` npm package
+   - Use test mode API keys from environment
+   - Handle Stripe errors gracefully
+   - Map Stripe responses to domain types
 
-- [ ] **Testing**
-  - [ ] Rating validation tests
-  - [ ] Average calculation tests
-  - [ ] Duplicate rating prevention
-  - [ ] Moderation flag tests
+3. Add use cases:
+   - `AuthorizePaymentUseCase` (call when booking created)
+   - `CapturePaymentUseCase` (call when booking completed)
 
-#### Success Criteria:
-- ✅ Two-way rating system works
-- ✅ Average ratings update immediately
-- ✅ Cannot rate before booking completion
-- ✅ Cannot rate twice
+4. Tests:
+   - Unit tests with mocked Stripe client
+   - Integration tests with Stripe test mode
 
----
+**Environment Variables Needed:**
+```bash
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+```
 
-## Week 4: Mobile App Foundation & Integration
+### Task 2: Real-Time Location Streaming (Ably)
 
-### 4.1 React Native Project Setup 📱
-**Priority: HIGH** - User-facing application
+**Files to Create:**
+```
+src/infrastructure/realtime/
+  ├── ably-location-service.adapter.ts
+  ├── ably-location-service.adapter.spec.ts
+  └── ably-location-service.integration.spec.ts
+```
 
-#### Implementation Checklist:
-- [ ] **Initialize React Native Project**
-  ```bash
-  npx react-native init AegisApp --template react-native-template-typescript
-  cd AegisApp
-  ```
+**What to Implement:**
 
-- [ ] **Install Core Dependencies**
-  ```bash
-  npm install @react-navigation/native @react-navigation/stack
-  npm install react-native-maps mapbox-gl
-  npm install @reduxjs/toolkit react-redux
-  npm install @tanstack/react-query
-  npm install socket.io-client
-  npm install axios
-  npm install @react-native-firebase/app @react-native-firebase/messaging
-  npm install react-native-geolocation-service
-  npm install react-native-permissions
-  ```
+1. Create `ILocationService` interface in `src/application/ports/`:
+```typescript
+export interface ILocationService {
+  publishLocation(bookingId: string, location: GeoLocation): Promise<void>;
+  subscribeToLocation(bookingId: string, callback: LocationCallback): Subscription;
+}
+```
 
-- [ ] **Project Structure**
-  ```
-  mobile/src/
-  ├── screens/
-  ├── components/
-  ├── services/
-  ├── store/
-  ├── navigation/
-  ├── utils/
-  └── types/
-  ```
+2. Implement `AblyLocationServiceAdapter`:
+   - Use `ably` npm package
+   - Publish to channel: `jobs:{jobId}:location`
+   - Handle connection failures gracefully
+   - Implement reconnection logic
 
-### 4.2 Core Screens Implementation 📲
+3. Add use case:
+   - `UpdateGuardLocationUseCase` (updates DB + publishes to Ably)
 
-#### Customer App Screens:
-- [ ] **Auth Screens**
-  - [ ] LoginScreen.tsx
-  - [ ] RegisterScreen.tsx
-  - [ ] OnboardingScreen.tsx
+4. Tests:
+   - Unit tests with mocked Ably client
+   - Integration tests with Ably sandbox
 
-- [ ] **Main Screens**
-  - [ ] HomeScreen.tsx - Map view with "Request Security" button
-  - [ ] BookingRequestScreen.tsx - Service type, duration, special requests
-  - [ ] GuardMatchingScreen.tsx - Loading, show matched guards
-  - [ ] BookingTrackingScreen.tsx - Real-time guard location, ETA, messaging
-  - [ ] BookingHistoryScreen.tsx - Past bookings
-  - [ ] RatingScreen.tsx - Rate guard after completion
+**Environment Variables Needed:**
+```bash
+ABLY_API_KEY=your_ably_api_key
+```
 
-#### Guard App Screens:
-- [ ] **Main Screens**
-  - [ ] GuardHomeScreen.tsx - Online/offline toggle, availability
-  - [ ] IncomingRequestScreen.tsx - Accept/decline booking
-  - [ ] ActiveBookingScreen.tsx - Navigation, customer location, check-in
-  - [ ] EarningsScreen.tsx - Today's earnings, payment history
-  - [ ] ProfileScreen.tsx - Skills, certifications, ratings
+### Task 3: Authentication & Authorization Infrastructure
 
-### 4.3 Core Services 🔧
+**Files to Create:**
+```
+src/infrastructure/auth/
+  ├── guards/
+  │   ├── jwt-auth.guard.ts
+  │   └── roles.guard.ts
+  ├── strategies/
+  │   └── jwt.strategy.ts
+  ├── decorators/
+  │   ├── current-user.decorator.ts
+  │   ├── public.decorator.ts
+  │   └── roles.decorator.ts
+  └── auth.module.ts
 
-- [ ] **API Service** (services/api.service.ts)
-  - [ ] Axios instance with auth interceptor
-  - [ ] Request/response logging
-  - [ ] Error handling
-  - [ ] Retry logic
+src/presentation/controllers/
+  └── auth.controller.ts (registers AuthModule endpoints)
+```
 
-- [ ] **WebSocket Service** (services/websocket.service.ts)
-  - [ ] Socket.io client connection
-  - [ ] Auto-reconnect logic
-  - [ ] Event handlers for location, messaging
-  - [ ] Connection status tracking
+**What to Implement:**
 
-- [ ] **Location Service** (services/location.service.ts)
-  - [ ] Request location permissions
-  - [ ] Start/stop background location tracking
-  - [ ] Emit location updates via WebSocket
-  - [ ] Geofencing support
+1. **JWT Strategy** using Passport:
+   - Validate JWT tokens
+   - Extract user from token payload
+   - Attach user to request object
 
-- [ ] **Notification Service** (services/notification.service.ts)
-  - [ ] FCM token registration
-  - [ ] Handle foreground/background notifications
-  - [ ] Deep linking from notifications
-  - [ ] Local notifications
+2. **Guards**:
+   - `JwtAuthGuard`: Protect all routes by default
+   - `RolesGuard`: Check user has required role(s)
 
-### 4.4 State Management 🗃️
+3. **Decorators**:
+   - `@Public()`: Skip JWT auth for login/register
+   - `@Roles('customer', 'guard')`: Require specific role
+   - `@CurrentUser()`: Inject authenticated user into controller
 
-- [ ] **Redux Slices**
-  - [ ] auth.slice.ts - User auth state
-  - [ ] booking.slice.ts - Current booking state
-  - [ ] location.slice.ts - Real-time location
-  - [ ] notifications.slice.ts - Notification history
+4. **Refactor Auth Use Cases**:
+   - Extract JWT generation into `AuthService`
+   - Keep use cases focused on business logic
+   - Move token generation to controller or service layer
 
-- [ ] **React Query Setup**
-  - [ ] Query client configuration
-  - [ ] Booking queries
-  - [ ] Guard queries
-  - [ ] Optimistic updates
+5. **Auth Module**:
+   - Register JwtModule with secret and expiration
+   - Register Passport JWT strategy
+   - Export guards and decorators
 
-### 4.5 Navigation 🧭
+**Example Controller:**
+```typescript
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private readonly registerUseCase: RegisterUserUseCase,
+    private readonly loginUseCase: LoginUserUseCase,
+    private readonly authService: AuthService,
+  ) {}
 
-- [ ] **Navigation Setup** (navigation/AppNavigator.tsx)
-  - [ ] Auth navigator (login, register)
-  - [ ] Customer stack navigator
-  - [ ] Guard stack navigator
-  - [ ] Deep linking configuration
-  - [ ] Tab navigation (home, history, profile)
+  @Public()
+  @Post('register')
+  async register(@Body() dto: RegisterUserDto) {
+    const user = await this.registerUseCase.execute(dto);
+    const tokens = await this.authService.generateTokens(user);
+    return { user, ...tokens };
+  }
 
-### 4.6 Map Integration 🗺️
+  @Public()
+  @Post('login')
+  async login(@Body() dto: LoginUserDto) {
+    return this.loginUseCase.execute(dto);
+  }
 
-- [ ] **MapBox Integration**
-  - [ ] Display map with current location
-  - [ ] Show available guards (customer view)
-  - [ ] Show customer location (guard view)
-  - [ ] Real-time guard position updates
-  - [ ] Route polyline (guard to customer)
-  - [ ] ETA display
+  @Post('refresh')
+  async refresh(@Body() dto: RefreshTokenDto) {
+    return this.refreshTokenUseCase.execute(dto);
+  }
+}
+```
 
-### 4.7 Testing 🧪
-
-- [ ] **Unit Tests**
-  - [ ] Redux reducers
-  - [ ] Utility functions
-  - [ ] Component logic
-
-- [ ] **Integration Tests**
-  - [ ] API service tests
-  - [ ] WebSocket connection tests
-  - [ ] Navigation flow tests
-
-- [ ] **E2E Tests** (Optional but recommended)
-  - [ ] Full booking flow (customer)
-  - [ ] Accept booking flow (guard)
-  - [ ] Messaging flow
-
-#### Success Criteria:
-- ✅ App runs on iOS and Android
-- ✅ Real-time location tracking works
-- ✅ WebSocket connection stable
-- ✅ Push notifications received
-- ✅ Complete booking flow functional
+**Dependencies to Install:**
+```bash
+npm install @nestjs/passport @nestjs/jwt passport passport-jwt
+npm install -D @types/passport-jwt
+```
 
 ---
 
-## Integration Testing 🔗
+## 📝 Additional Use Cases Needed
 
-### End-to-End Scenarios:
-- [ ] **Scenario 1: Happy Path Booking**
-  1. Customer opens app, requests security guard
-  2. System finds matching guard within 3 seconds
-  3. Guard receives notification and accepts
-  4. Customer sees guard location and ETA
-  5. Guard arrives and checks in
-  6. Service completed, payment processed
-  7. Both parties rate each other
+Based on `MVP_IMPLEMENTATION_PLAN.md`, you'll also need:
 
-- [ ] **Scenario 2: No Guards Available**
-  1. Customer requests security
-  2. System searches but finds no available guards
-  3. Booking marked as EXPIRED after 2 minutes
-  4. Customer notified and refunded (if paid)
+### Booking Use Cases (for Phase 4)
+- ✅ `CreateBookingUseCase` (done)
+- ❌ `AcceptBookingUseCase` - Guard accepts a booking
+- ❌ `CompleteBookingUseCase` - Guard marks job complete
+- ❌ `GetBookingDetailsUseCase` - Get single booking
+- ❌ `ListBookingsUseCase` - List bookings (filtered by role)
 
-- [ ] **Scenario 3: Guard Declines**
-  1. Customer requests security
-  2. Guard 1 matched, declines after 20 seconds
-  3. System immediately matches Guard 2
-  4. Guard 2 accepts
-  5. Booking proceeds normally
+### Location Use Cases
+- ❌ `UpdateGuardLocationUseCase` - Update guard location (DB + Ably)
+- ❌ `GetCurrentLocationUseCase` - Get current guard location for booking
 
-- [ ] **Scenario 4: Cancellation**
-  1. Customer books guard for 4 hours later
-  2. Customer cancels 30 minutes before
-  3. 50% cancellation fee applied
-  4. Guard notified and compensated
+### User Use Cases
+- ❌ `GetUserProfileUseCase`
+- ❌ `UpdateUserProfileUseCase`
 
-- [ ] **Load Testing**
-  - [ ] 100 concurrent booking requests
-  - [ ] 500 WebSocket connections
-  - [ ] 1000 location updates per second
-  - [ ] Verify p95 latency <200ms
+### Payment Use Cases
+- ❌ `AuthorizePaymentUseCase`
+- ❌ `CapturePaymentUseCase`
 
 ---
 
-## Deployment Checklist 🚀
+## 🧪 Testing Reminders
 
-### Prerequisites:
-- [ ] AWS account set up
-- [ ] Domain name registered
-- [ ] SSL certificates obtained
-- [ ] Stripe account in test mode
-- [ ] Firebase project created
-- [ ] MapBox API key obtained
+### Unit Tests
+- Use direct instantiation for use cases
+- Mock all repositories and adapters
+- Test happy path + error cases + edge cases
+- Aim for >80% coverage
 
-### Infrastructure:
-- [ ] Deploy PostgreSQL (RDS)
-- [ ] Deploy Redis (ElastiCache)
-- [ ] Deploy backend to ECS/EKS
-- [ ] Set up load balancer
-- [ ] Configure CloudFront CDN
-- [ ] Set up monitoring (Datadog/Sentry)
+### Integration Tests
+- Use `test/setup-integration.ts` for database setup
+- Create dedicated integration test for each repository
+- Test with real PostgreSQL database
+- Clean database with `cleanDatabase()` before each test
 
-### Environment Variables:
-- [ ] DATABASE_URL
-- [ ] REDIS_URL
-- [ ] JWT_SECRET
-- [ ] STRIPE_SECRET_KEY
-- [ ] MAPBOX_API_KEY
-- [ ] FIREBASE_ADMIN_SDK_KEY
-- [ ] TWILIO_ACCOUNT_SID
-- [ ] SENDGRID_API_KEY
+### Running Tests
+```bash
+# Unit tests (123 tests)
+npm test
 
-### Mobile App:
-- [ ] Build iOS app (TestFlight)
-- [ ] Build Android app (Internal Testing)
-- [ ] Configure deep linking
-- [ ] Set up crash reporting
-- [ ] Enable analytics
+# Integration tests (11 tests) - requires PostgreSQL
+npm run test:integration
 
----
+# All tests with coverage
+npm run test:all
 
-## Success Metrics 📊
+# Watch mode for TDD
+npm run test:watch
+```
 
-Track these metrics to validate Phase 3 completion:
+### PostgreSQL Setup
+If the next agent needs to set up PostgreSQL:
+```bash
+# Set postgres password
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 
-### Technical Metrics:
-- [ ] **API Performance**: p95 < 200ms ✅
-- [ ] **Match Finding Time**: p95 < 3 seconds ✅
-- [ ] **WebSocket Latency**: p95 < 100ms ✅
-- [ ] **Location Accuracy**: Average error < 50m ✅
-- [ ] **Test Coverage**: >80% ✅
-- [ ] **Uptime**: >99% ✅
+# Create test database
+sudo -u postgres psql -c "CREATE DATABASE aegis_mvp_test;"
 
-### Functional Metrics:
-- [ ] **Match Success Rate**: >90% ✅
-- [ ] **Guard Response Time**: p95 < 30 seconds ✅
-- [ ] **Notification Delivery**: >95% ✅
-- [ ] **Message Delivery**: >99% ✅
+# Verify
+sudo -u postgres psql -c "\l" | grep aegis_mvp_test
+```
 
-### User Experience:
-- [ ] **Booking Time**: <2 minutes (request to match) ✅
-- [ ] **App Crashes**: <1% ✅
-- [ ] **User Feedback**: >4.0 stars in testing ✅
+See `test/TEST_QUICKSTART.md` for detailed setup instructions.
 
 ---
 
-## Notes & Tips 💡
+## 🎯 Success Criteria for Phase 3
 
-### Development Best Practices:
-1. **Write tests first** (TDD) for critical algorithms (matching, scoring)
-2. **Use feature flags** to deploy incomplete features safely
-3. **Log everything** - you'll need it for debugging production issues
-4. **Monitor from day 1** - don't wait for problems to add monitoring
-5. **Document as you go** - OpenAPI docs, code comments, architecture diagrams
+By end of Week 3, you should have:
 
-### Common Pitfalls to Avoid:
-- ❌ Not testing WebSocket reconnection logic
-- ❌ Hardcoding credentials (use environment variables)
-- ❌ Ignoring edge cases (null guards, out-of-bounds locations)
-- ❌ Not implementing proper error handling
-- ❌ Skipping database indexes (will cause slow queries at scale)
-- ❌ Not rate limiting APIs (prevents abuse)
-
-### Performance Optimization:
-- ✅ Index frequently queried fields (location, status, created_at)
-- ✅ Cache guard locations in Redis (avoid DB queries)
-- ✅ Use database connection pooling
-- ✅ Implement CDN for static assets
-- ✅ Compress API responses (gzip)
-- ✅ Lazy load mobile app screens
-
-### Security Considerations:
-- ✅ Validate all inputs (DTOs with class-validator)
-- ✅ Sanitize user-generated content (prevent XSS)
-- ✅ Use parameterized queries (prevent SQL injection)
-- ✅ Rate limit API endpoints
-- ✅ Implement CORS properly
-- ✅ Never log sensitive data (passwords, tokens)
-- ✅ Encrypt data at rest and in transit
+- ✅ Stripe payment integration working in test mode
+- ✅ Ably real-time location streaming working
+- ✅ JWT authentication with NestJS guards
+- ✅ Role-based access control (RBAC)
+- ✅ Auth middleware protecting all routes (except public ones)
+- ✅ All new code tested (unit + integration)
+- ✅ Updated test count: ~180+ tests total
 
 ---
 
-## When to Move to Phase 4
+## 📚 Documentation to Reference
 
-Phase 3 is complete when:
-- ✅ All core services implemented and tested
-- ✅ Mobile app can complete full booking flow
-- ✅ Real-time features working (location, messaging)
-- ✅ All integration tests passing
-- ✅ Load testing results meet targets
-- ✅ Beta testers can successfully book and complete services
-- ✅ No critical bugs in production
-
-**Estimated Effort**: 4 weeks (1 senior backend dev + 1 senior mobile dev)
+- **Implementation Plan**: `/MVP_IMPLEMENTATION_PLAN.md` (this is the source of truth)
+- **Testing Guide**: `mvp/packages/backend/TESTING.md` (comprehensive testing strategy)
+- **Quick Start**: `mvp/packages/backend/test/TEST_QUICKSTART.md` (quick commands)
+- **Architecture**: Check `lattice/` folder for design decisions
 
 ---
 
-## Current Priority Tasks (Start Here!)
+## ⚠️ Common Pitfalls to Avoid
 
-1. ✅ Set up NestJS backend project
-2. ✅ Configure Prisma with PostgreSQL
-3. ✅ Implement matching service and algorithms
-4. ⏭️ Set up Redis for location caching
-5. ⏭️ Build WebSocket gateway for real-time features
-6. ⏭️ Implement booking state machine
-7. ⏭️ Initialize React Native mobile project
-8. ⏭️ Integrate MapBox for maps
-9. ⏭️ Connect mobile app to backend APIs
-10. ⏭️ End-to-end testing
+1. **Don't use Test.createTestingModule() for use case unit tests**
+   - Only use it for integration tests with real NestJS infrastructure
+   - See TESTING.md for the rationale
+
+2. **Don't forget Number() conversions for TypeORM decimals**
+   - `rating`, `hourly_rate`, `latitude`, `longitude` all need conversion
+
+3. **Don't forget null safety in repository methods**
+   - Always check if `findById()` returns null before returning
+
+4. **Don't mix business logic into controllers**
+   - Controllers should be thin - just call use cases
+   - Keep domain logic in entities and services
+   - Keep application logic in use cases
+
+5. **Don't hardcode secrets**
+   - Use environment variables
+   - Add `.env.example` with dummy values
+   - Document all required env vars
+
+6. **Don't skip tests**
+   - Write tests first when possible (TDD)
+   - Integration tests are critical for repositories and adapters
+   - Keep test execution time under 5 minutes
 
 ---
 
-**Last Updated**: November 11, 2025
-**Phase Status**: 🟡 In Progress
-**Next Review**: November 18, 2025
+## 🔄 Development Workflow
+
+1. **Start with failing test** (TDD approach)
+2. **Implement minimum code to pass**
+3. **Refactor if needed**
+4. **Run full test suite** (`npm test`)
+5. **Commit frequently** with descriptive messages
+6. **Update this TODO.md** as you complete tasks
+
+---
+
+## 💡 Tips for Success
+
+- **Read the implementation plan**: `MVP_IMPLEMENTATION_PLAN.md` has all the details
+- **Follow existing patterns**: Look at how UserRepository and auth use cases are structured
+- **Test as you go**: Don't leave testing for the end
+- **Keep it simple**: MVP means minimum viable - don't over-engineer
+- **Document decisions**: If you deviate from plan, document why
+- **Use the pattern**: Direct instantiation for unit tests, real DB for integration
+
+---
+
+## 🎬 Getting Started Commands
+
+```bash
+# Navigate to backend
+cd mvp/packages/backend
+
+# Install dependencies (if needed)
+npm install
+
+# Run unit tests
+npm test
+
+# Run integration tests (requires PostgreSQL)
+npm run test:integration
+
+# Start development server
+npm run dev
+
+# Check current git status
+git status
+
+# See recent commits
+git log --oneline -10
+```
+
+---
+
+## 📊 Current Test Breakdown
+
+- **Domain Layer**: 100% coverage (Phase 1)
+- **Application Layer Use Cases**: 100% coverage (Phase 2)
+- **Mappers**: 100% coverage (Phase 2)
+- **Repository Integration**: UserRepository only (Phase 2)
+- **Total**: 134 tests (123 unit + 11 integration)
+
+**Target for Phase 3**: 180-200 tests
+
+---
+
+## 🚦 Next Agent Action Items
+
+1. **Review this TODO.md** thoroughly
+2. **Read `MVP_IMPLEMENTATION_PLAN.md` Week 3** section
+3. **Check `TESTING.md`** for testing patterns
+4. **Install Stripe and Ably SDKs**
+5. **Start with Stripe adapter** (easiest to test in isolation)
+6. **Move to Ably adapter**
+7. **Finish with Auth infrastructure** (most complex)
+8. **Update this TODO.md** as you progress
+
+---
+
+**Good luck! The foundation is solid. Phase 3 will bring it all together with external services and proper NestJS infrastructure.**
+
+🤖 Last updated by Claude Code session on 2025-11-11
