@@ -53,6 +53,32 @@ mvp/
     - `BookingCompletedEvent`
 - **Unit Tests**: Comprehensive test coverage for domain layer (>90% target)
 
+---
+
+## Phase 2: Application Layer & Database ✅
+
+### Completed
+
+- **Application Layer Implementation**:
+  - **Use Cases**:
+    - Authentication: `RegisterUser`, `LoginUser`, `RefreshToken`
+    - Bookings: `CreateBooking`, `AcceptBooking`, `CompleteBooking`, `GetBooking`, `ListBookings`
+    - Location: `UpdateLocation`, `GetCurrentLocation`
+    - Payments: `AuthorizePayment`, `CapturePayment`
+  - **DTOs** (with class-validator):
+    - Request/Response DTOs for all use cases
+    - Validation rules for all inputs
+  - **Ports (Repository Interfaces)**:
+    - `IUserRepository`, `IBookingRepository`, `IPaymentRepository`
+    - `ILocationRepository`, `IPaymentGateway`, `ILocationService`
+- **Infrastructure Layer - Database**:
+  - **TypeORM Configuration**: PostgreSQL with PostGIS support
+  - **Database Entities**: 5 tables (users, guard_profiles, bookings, location_updates, payments)
+  - **Migrations**: Initial schema migration with PostGIS extension
+  - **Repository Implementations**: All repository interfaces implemented
+  - **Mappers**: Domain entity ↔ Database entity conversion
+  - **Seed Data**: Test users (1 customer, 2 guards with different locations)
+
 ### Key Design Decisions
 
 1. **Clean Architecture**: Domain layer is isolated from infrastructure concerns
@@ -90,6 +116,17 @@ mvp/
 # Install dependencies
 npm install
 
+# Setup environment variables
+cd packages/backend
+cp .env.example .env
+# Edit .env with your database credentials
+
+# Run database migrations
+npm run migration:run
+
+# Seed test data (1 customer, 2 guards)
+npm run seed
+
 # Run tests
 npm run test
 
@@ -103,8 +140,14 @@ npm run backend:test -- --coverage
 ### Development
 
 ```bash
-# Start backend in development mode (once implemented)
-npm run backend:dev
+# Start backend in development mode
+cd packages/backend
+npm run dev
+
+# Database operations
+npm run migration:run      # Run migrations
+npm run migration:revert   # Revert last migration
+npm run seed              # Seed test data
 
 # Start frontend in development mode (once implemented)
 npm run frontend:dev
@@ -116,18 +159,41 @@ npm run lint
 npm run format
 ```
 
+### Test Credentials (After Seeding)
+
+After running `npm run seed`, you can use these test accounts:
+
+- **Customer**:
+  - Email: `customer@test.com`
+  - Password: `customer123`
+
+- **Guard 1** (San Francisco, $50/hr):
+  - Email: `guard1@test.com`
+  - Password: `guard123`
+
+- **Guard 2** (Los Angeles, $45/hr):
+  - Email: `guard2@test.com`
+  - Password: `guard123`
+
 ## Testing
 
-The project follows TDD principles with comprehensive unit tests for the domain layer:
+The project follows TDD principles with comprehensive tests:
 
-- **Value Objects Tests**: Email, Money, GeoLocation validation and behavior
-- **Entity Tests**: State transitions, business rules, validations
-- **Domain Service Tests**: Matching algorithms, pricing calculations
+- **Domain Layer Tests** (Phase 1):
+  - Value Objects Tests: Email, Money, GeoLocation validation and behavior
+  - Entity Tests: State transitions, business rules, validations
+  - Domain Service Tests: Matching algorithms, pricing calculations
+
+- **Application Layer Tests** (Phase 2 - Planned):
+  - Use Case Tests: Authentication, booking flow, payments
+  - Repository Integration Tests: Database operations
 
 Run tests with:
 ```bash
 cd packages/backend
-npm test
+npm test                # Run all tests
+npm run test:watch     # Watch mode
+npm run test:cov       # With coverage
 ```
 
 ## MVP Timeline (6-8 Weeks)
@@ -138,12 +204,12 @@ npm test
 - Domain events
 - Unit tests with >90% coverage
 
-### Week 2: Application Layer & Database (NEXT)
+### ✅ Week 2: Application Layer & Database (COMPLETED)
 - Use cases implementation
 - Repository interfaces
-- PostgreSQL setup with TypeORM/Prisma
+- PostgreSQL setup with TypeORM
 - Database migrations
-- Integration tests
+- Seed data generator
 
 ### Week 3: External Services & Auth
 - Stripe integration (test mode)
@@ -265,6 +331,6 @@ See [MVP_IMPLEMENTATION_PLAN.md](../MVP_IMPLEMENTATION_PLAN.md) for the complete
 
 ---
 
-**Last Updated**: 2025-11-10
-**Status**: Phase 1 Complete - Domain Layer Implemented
-**Next Phase**: Week 2 - Application Layer & Database
+**Last Updated**: 2025-11-11
+**Status**: Phase 2 Complete - Application Layer & Database Implemented
+**Next Phase**: Week 3 - External Services & Auth (Stripe, Ably, JWT middleware)
