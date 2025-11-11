@@ -21,7 +21,7 @@ export class AcceptBookingUseCase {
     bookingId: string,
   ): Promise<AcceptBookingResponseDto> {
     // Verify guard exists
-    const guard = await this.userRepository.findGuardById(new UserId(guardId));
+    const guard = await this.userRepository.findGuardById(UserId.fromString(guardId));
     if (!guard) {
       throw new NotFoundException('Guard not found');
     }
@@ -33,10 +33,8 @@ export class AcceptBookingUseCase {
     }
 
     // Verify guard is assigned to this booking
-    if (
-      !booking.getGuardId() ||
-      booking.getGuardId().getValue() !== guardId
-    ) {
+    const bookingGuardId = booking.getGuardId();
+    if (!bookingGuardId || bookingGuardId.getValue() !== guardId) {
       throw new ForbiddenException(
         'You are not assigned to this booking',
       );
@@ -52,7 +50,7 @@ export class AcceptBookingUseCase {
     }
 
     // Accept booking
-    booking.accept();
+    booking.acceptByGuard();
 
     // Update guard availability
     guard.setAvailable(false);
@@ -61,9 +59,14 @@ export class AcceptBookingUseCase {
     // Save booking
     const updatedBooking = await this.bookingRepository.update(booking);
 
+    const finalGuardId = updatedBooking.getGuardId();
+    if (!finalGuardId) {
+      throw new Error('Guard ID not found after booking acceptance');
+    }
+
     return {
       id: updatedBooking.getId(),
-      guardId: updatedBooking.getGuardId().getValue(),
+      guardId: finalGuardId.getValue(),
       status: updatedBooking.getStatus(),
       acceptedAt: updatedBooking.getUpdatedAt(),
     };

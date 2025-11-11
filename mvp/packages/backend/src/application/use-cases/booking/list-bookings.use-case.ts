@@ -19,11 +19,11 @@ export class ListBookingsUseCase {
 
     if (query.customerId) {
       bookings = await this.bookingRepository.findByCustomerId(
-        new UserId(query.customerId),
+        UserId.fromString(query.customerId),
       );
     } else if (query.guardId) {
       bookings = await this.bookingRepository.findByGuardId(
-        new UserId(query.guardId),
+        UserId.fromString(query.guardId),
       );
     } else if (query.status) {
       bookings = await this.bookingRepository.findByStatus(
