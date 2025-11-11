@@ -35,7 +35,11 @@ export class BookingRepository implements IBookingRepository {
   async update(booking: Booking): Promise<Booking> {
     const bookingEntity = BookingMapper.toPersistence(booking);
     await this.bookingRepository.update(booking.getId(), bookingEntity);
-    return this.findById(booking.getId());
+    const updated = await this.findById(booking.getId());
+    if (!updated) {
+      throw new Error(`Booking ${booking.getId()} not found after update`);
+    }
+    return updated;
   }
 
   async findByCustomerId(customerId: UserId): Promise<Booking[]> {

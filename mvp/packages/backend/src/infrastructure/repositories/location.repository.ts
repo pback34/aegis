@@ -35,7 +35,7 @@ export class LocationRepository implements ILocationRepository {
     return {
       id: saved.id,
       bookingId: saved.booking_id,
-      guardId: new UserId(saved.guard_id),
+      guardId: UserId.fromString(saved.guard_id),
       location: new GeoLocation(saved.latitude, saved.longitude),
       accuracyMeters: saved.accuracy_meters || undefined,
       timestamp: saved.timestamp,
@@ -57,7 +57,7 @@ export class LocationRepository implements ILocationRepository {
     return {
       id: entity.id,
       bookingId: entity.booking_id,
-      guardId: new UserId(entity.guard_id),
+      guardId: UserId.fromString(entity.guard_id),
       location: new GeoLocation(entity.latitude, entity.longitude),
       accuracyMeters: entity.accuracy_meters || undefined,
       timestamp: entity.timestamp,
@@ -73,7 +73,7 @@ export class LocationRepository implements ILocationRepository {
     return entities.map((entity) => ({
       id: entity.id,
       bookingId: entity.booking_id,
-      guardId: new UserId(entity.guard_id),
+      guardId: UserId.fromString(entity.guard_id),
       location: new GeoLocation(entity.latitude, entity.longitude),
       accuracyMeters: entity.accuracy_meters || undefined,
       timestamp: entity.timestamp,
