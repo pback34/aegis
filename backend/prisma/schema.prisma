@@ -1,0 +1,333 @@
+// Aegis Database Schema
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [uuidOssp(map: "uuid-ossp"), postgis]
+}
+
+enum UserRole {
+  CUSTOMER
+  GUARD
+  ADMIN
+}
+
+enum BookingStatus {
+  REQUESTED
+  SEARCHING
+  MATCHED
+  CONFIRMED
+  GUARD_EN_ROUTE
+  GUARD_ARRIVED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  EXPIRED
+}
+
+enum ServiceType {
+  BASIC_GUARD
+  EVENT_SECURITY
+  EXECUTIVE_PROTECTION
+  K9_UNIT
+  ARMED_GUARD
+  PATROL
+  LOSS_PREVENTION
+}
+
+enum NotificationType {
+  BOOKING_REQUESTED
+  GUARD_MATCHED
+  GUARD_ACCEPTED
+  GUARD_DECLINED
+  GUARD_ARRIVING
+  GUARD_ARRIVED
+  BOOKING_STARTED
+  BOOKING_COMPLETED
+  PAYMENT_PROCESSED
+  RATING_REQUEST
+  MESSAGE_RECEIVED
+  SYSTEM_ALERT
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  LOCATION
+  EMERGENCY
+}
+
+model User {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  email         String   @unique
+  phoneNumber   String?  @unique @map("phone_number")
+  passwordHash  String   @map("password_hash")
+  firstName     String   @map("first_name")
+  lastName      String   @map("last_name")
+  role          UserRole
+  avatar        String?
+  isActive      Boolean  @default(true) @map("is_active")
+  isVerified    Boolean  @default(false) @map("is_verified")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  lastLoginAt   DateTime? @map("last_login_at")
+
+  // Relations
+  guardProfile     GuardProfile?
+  customerBookings Booking[]         @relation("CustomerBookings")
+  guardBookings    Booking[]         @relation("GuardBookings")
+  sentMessages     Message[]         @relation("SentMessages")
+  receivedRatings  Rating[]          @relation("RateeRatings")
+  givenRatings     Rating[]          @relation("RaterRatings")
+  notifications    Notification[]
+  deviceTokens     DeviceToken[]
+
+  @@map("users")
+}
+
+model GuardProfile {
+  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId            String   @unique @map("user_id") @db.Uuid
+  bio               String?  @db.Text
+  hourlyRate        Decimal  @map("hourly_rate") @db.Decimal(10, 2)
+  experienceYears   Int      @map("experience_years")
+  licenseNumber     String   @unique @map("license_number")
+  licenseState      String   @map("license_state")
+  licenseExpiry     DateTime @map("license_expiry")
+  isAvailable       Boolean  @default(false) @map("is_available")
+  isOnline          Boolean  @default(false) @map("is_online")
+  averageRating     Decimal  @default(0) @map("average_rating") @db.Decimal(3, 2)
+  totalRatings      Int      @default(0) @map("total_ratings")
+  totalBookings     Int      @default(0) @map("total_bookings")
+  completedBookings Int      @default(0) @map("completed_bookings")
+  backgroundCheckStatus String @default("pending") @map("background_check_status")
+  backgroundCheckDate   DateTime? @map("background_check_date")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skills           GuardSkill[]
+  certifications   Certification[]
+  locations        LocationHistory[]
+
+  @@map("guard_profiles")
+}
+
+model GuardSkill {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  guardProfileId String   @map("guard_profile_id") @db.Uuid
+  skillName      String   @map("skill_name")
+  proficiency    String?  // BASIC, INTERMEDIATE, ADVANCED
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  guardProfile GuardProfile @relation(fields: [guardProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([guardProfileId, skillName])
+  @@map("guard_skills")
+}
+
+model Certification {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  guardProfileId String   @map("guard_profile_id") @db.Uuid
+  name           String
+  issuedBy       String   @map("issued_by")
+  issuedDate     DateTime @map("issued_date")
+  expiryDate     DateTime? @map("expiry_date")
+  certificateUrl String?  @map("certificate_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  guardProfile GuardProfile @relation(fields: [guardProfileId], references: [id], onDelete: Cascade)
+
+  @@map("certifications")
+}
+
+model Booking {
+  id              String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  customerId      String        @map("customer_id") @db.Uuid
+  guardId         String?       @map("guard_id") @db.Uuid
+  status          BookingStatus
+  serviceType     ServiceType   @map("service_type")
+
+  // Location
+  latitude        Decimal       @db.Decimal(10, 8)
+  longitude       Decimal       @db.Decimal(11, 8)
+  address         String?
+
+  // Timing
+  startTime       DateTime      @map("start_time")
+  endTime         DateTime?     @map("end_time")
+  duration        Int           // Duration in hours
+  actualStartTime DateTime?     @map("actual_start_time")
+  actualEndTime   DateTime?     @map("actual_end_time")
+
+  // Requirements
+  requiredSkills  String[]      @map("required_skills")
+  specialRequests String?       @db.Text @map("special_requests")
+
+  // Pricing
+  hourlyRate      Decimal       @map("hourly_rate") @db.Decimal(10, 2)
+  totalAmount     Decimal       @map("total_amount") @db.Decimal(10, 2)
+  platformFee     Decimal       @map("platform_fee") @db.Decimal(10, 2)
+  guardEarnings   Decimal       @map("guard_earnings") @db.Decimal(10, 2)
+
+  // Cancellation
+  cancellationFee Decimal?      @map("cancellation_fee") @db.Decimal(10, 2)
+  cancelledBy     String?       @map("cancelled_by") @db.Uuid
+  cancellationReason String?    @db.Text @map("cancellation_reason")
+
+  // Matching
+  matchScore      Decimal?      @map("match_score") @db.Decimal(5, 2)
+  matchedAt       DateTime?     @map("matched_at")
+  acceptedAt      DateTime?     @map("accepted_at")
+  expiresAt       DateTime?     @map("expires_at")
+
+  // Metadata
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  customer        User          @relation("CustomerBookings", fields: [customerId], references: [id])
+  guard           User?         @relation("GuardBookings", fields: [guardId], references: [id])
+  messages        Message[]
+  ratings         Rating[]
+  events          BookingEvent[]
+  conversation    Conversation?
+
+  @@index([customerId])
+  @@index([guardId])
+  @@index([status])
+  @@index([startTime])
+  @@map("bookings")
+}
+
+model BookingEvent {
+  id          String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  bookingId   String        @map("booking_id") @db.Uuid
+  eventType   String        @map("event_type") // State transition
+  fromStatus  BookingStatus? @map("from_status")
+  toStatus    BookingStatus  @map("to_status")
+  metadata    Json?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  // Relations
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@map("booking_events")
+}
+
+model LocationHistory {
+  id             String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  guardProfileId String   @map("guard_profile_id") @db.Uuid
+  latitude       Decimal  @db.Decimal(10, 8)
+  longitude      Decimal  @db.Decimal(11, 8)
+  accuracy       Decimal? @db.Decimal(10, 2)
+  heading        Decimal? @db.Decimal(5, 2)
+  speed          Decimal? @db.Decimal(10, 2)
+  timestamp      DateTime
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  guardProfile GuardProfile @relation(fields: [guardProfileId], references: [id], onDelete: Cascade)
+
+  @@index([guardProfileId, timestamp])
+  @@map("location_history")
+}
+
+model Conversation {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  bookingId String   @unique @map("booking_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  booking  Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  bookingId      String      @map("booking_id") @db.Uuid
+  senderId       String      @map("sender_id") @db.Uuid
+  content        String      @db.Text
+  messageType    MessageType @map("message_type")
+  isRead         Boolean     @default(false) @map("is_read")
+  readAt         DateTime?   @map("read_at")
+  attachmentUrl  String?     @map("attachment_url")
+  metadata       Json?
+  createdAt      DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  booking      Booking      @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([conversationId])
+  @@index([bookingId])
+  @@index([senderId])
+  @@map("messages")
+}
+
+model Rating {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  bookingId String   @map("booking_id") @db.Uuid
+  raterId   String   @map("rater_id") @db.Uuid
+  rateeId   String   @map("ratee_id") @db.Uuid
+  rating    Int      // 1-5 stars
+  review    String?  @db.Text
+  tags      String[] // ['professional', 'on-time', 'courteous']
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  rater   User    @relation("RaterRatings", fields: [raterId], references: [id])
+  ratee   User    @relation("RateeRatings", fields: [rateeId], references: [id])
+
+  @@unique([bookingId, raterId])
+  @@index([rateeId])
+  @@map("ratings")
+}
+
+model Notification {
+  id        String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  title     String
+  body      String           @db.Text
+  data      Json?
+  isRead    Boolean          @default(false) @map("is_read")
+  readAt    DateTime?        @map("read_at")
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model DeviceToken {
+  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique
+  platform  String   // 'ios' | 'android' | 'web'
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("device_tokens")
+}
