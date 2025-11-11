@@ -34,6 +34,9 @@ describe('RefreshTokenUseCase', () => {
         refreshToken: validRefreshToken,
       };
 
+      // Wait 1 second to ensure new token has different iat timestamp
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       // Act
       const result = await useCase.execute(dto);
 

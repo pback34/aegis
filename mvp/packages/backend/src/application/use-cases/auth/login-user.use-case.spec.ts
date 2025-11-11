@@ -1,4 +1,3 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { LoginUserUseCase } from './login-user.use-case';
 import { IUserRepository } from '../../ports/user.repository.interface';
@@ -14,7 +13,7 @@ describe('LoginUserUseCase', () => {
   let useCase: LoginUserUseCase;
   let mockUserRepository: jest.Mocked<IUserRepository>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     mockUserRepository = {
       save: jest.fn(),
       findById: jest.fn(),
@@ -28,16 +27,7 @@ describe('LoginUserUseCase', () => {
       updateGuardLocation: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        LoginUserUseCase,
-        {
-          provide: 'IUserRepository',
-          useValue: mockUserRepository,
-        },
-      ],
-    }).compile();
-
+    // Direct instantiation instead of NestJS module
     useCase = new LoginUserUseCase(mockUserRepository);
   });
 
@@ -48,7 +38,7 @@ describe('LoginUserUseCase', () => {
       const passwordHash = await bcrypt.hash(password, 10);
 
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash,
         fullName: 'John Doe',
@@ -94,7 +84,7 @@ describe('LoginUserUseCase', () => {
       const passwordHash = await bcrypt.hash(password, 10);
 
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash,
         fullName: 'John Doe',
@@ -144,7 +134,7 @@ describe('LoginUserUseCase', () => {
       const passwordHash = await bcrypt.hash(correctPassword, 10);
 
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash,
         fullName: 'John Doe',
@@ -186,7 +176,7 @@ describe('LoginUserUseCase', () => {
       const passwordHash = await bcrypt.hash(password, 10);
 
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash,
         fullName: 'John Doe',
@@ -222,7 +212,7 @@ describe('LoginUserUseCase', () => {
       const passwordHash = await bcrypt.hash(password, 10);
 
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash,
         fullName: 'John Doe',

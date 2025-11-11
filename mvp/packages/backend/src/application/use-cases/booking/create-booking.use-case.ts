@@ -27,7 +27,7 @@ export class CreateBookingUseCase {
   ): Promise<CreateBookingResponseDto> {
     // Verify customer exists
     const customer = await this.userRepository.findCustomerById(
-      new UserId(customerId),
+      UserId.fromString(customerId),
     );
     if (!customer) {
       throw new NotFoundException('Customer not found');
@@ -64,14 +64,10 @@ export class CreateBookingUseCase {
 
     if (matchedGuard) {
       // Match found - assign guard and calculate pricing
-      booking.assignGuard(matchedGuard.getId());
-
-      const { estimatedTotal } = this.pricingService.calculateBookingCost(
-        matchedGuard.getHourlyRate(),
-        dto.estimatedHours,
+      booking.assignGuard(
+        matchedGuard.guard.getId(),
+        matchedGuard.guard.getHourlyRate(),
       );
-
-      booking.updatePricing(matchedGuard.getHourlyRate(), estimatedTotal);
     }
 
     // Save booking

@@ -31,7 +31,7 @@ export class RegisterUserUseCase {
     let user;
     if (dto.role === UserRole.CUSTOMER) {
       user = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email,
         passwordHash,
         fullName: dto.fullName,
@@ -47,7 +47,7 @@ export class RegisterUserUseCase {
       }
 
       user = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email,
         passwordHash,
         fullName: dto.fullName,
