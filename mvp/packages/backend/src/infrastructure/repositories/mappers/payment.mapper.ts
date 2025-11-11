@@ -8,8 +8,8 @@ export class PaymentMapper {
     return new Payment({
       id: entity.id,
       bookingId: entity.booking_id,
-      customerId: new UserId(entity.customer_id),
-      guardId: new UserId(entity.guard_id),
+      customerId: UserId.fromString(entity.customer_id),
+      guardId: UserId.fromString(entity.guard_id),
       amount: new Money(entity.amount),
       platformFee: new Money(entity.platform_fee),
       guardPayout: new Money(entity.guard_payout),

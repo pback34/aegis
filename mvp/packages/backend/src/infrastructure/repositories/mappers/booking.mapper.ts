@@ -8,8 +8,8 @@ export class BookingMapper {
   static toDomain(entity: BookingEntity): Booking {
     return new Booking({
       id: entity.id,
-      customerId: new UserId(entity.customer_id),
-      guardId: entity.guard_id ? new UserId(entity.guard_id) : undefined,
+      customerId: UserId.fromString(entity.customer_id),
+      guardId: entity.guard_id ? UserId.fromString(entity.guard_id) : undefined,
       status: entity.status as BookingStatus,
       serviceLocationAddress: entity.service_location_address,
       serviceLocation: new GeoLocation(

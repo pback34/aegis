@@ -35,7 +35,11 @@ export class PaymentRepository implements IPaymentRepository {
   async update(payment: Payment): Promise<Payment> {
     const paymentEntity = PaymentMapper.toPersistence(payment);
     await this.paymentRepository.update(payment.getId(), paymentEntity);
-    return this.findById(payment.getId());
+    const updated = await this.findById(payment.getId());
+    if (!updated) {
+      throw new Error(`Payment ${payment.getId()} not found after update`);
+    }
+    return updated;
   }
 
   async findByBookingId(bookingId: string): Promise<Payment | null> {
