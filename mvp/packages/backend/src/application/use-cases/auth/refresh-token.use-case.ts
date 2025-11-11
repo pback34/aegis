@@ -1,10 +1,20 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import * as jwt from 'jsonwebtoken';
-import { JwtPayload } from './login-user.use-case';
 import {
   RefreshTokenDto,
   RefreshTokenResponseDto,
 } from '../../dtos/auth.dto';
+
+/**
+ * JWT Payload interface
+ * Note: This is duplicated from the JWT strategy for now
+ * TODO: Refactor to use AuthService for token operations
+ */
+interface JwtPayload {
+  sub: string;
+  email: string;
+  role: string;
+}
 
 @Injectable()
 export class RefreshTokenUseCase {
