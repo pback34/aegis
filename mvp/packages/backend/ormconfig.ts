@@ -1,3 +1,3 @@
-import { typeOrmConfig } from './src/infrastructure/config/typeorm.config';
+import { AppDataSource } from './src/infrastructure/config/typeorm.config';
 
-export default typeOrmConfig;
+export default AppDataSource;
