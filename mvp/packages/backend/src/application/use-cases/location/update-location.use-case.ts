@@ -29,7 +29,7 @@ export class UpdateLocationUseCase {
     dto: UpdateLocationDto,
   ): Promise<UpdateLocationResponseDto> {
     // Verify guard exists
-    const guard = await this.userRepository.findGuardById(new UserId(guardId));
+    const guard = await this.userRepository.findGuardById(UserId.fromString(guardId));
     if (!guard) {
       throw new NotFoundException('Guard not found');
     }
@@ -41,9 +41,10 @@ export class UpdateLocationUseCase {
     }
 
     // Verify guard is assigned to this booking
+    const bookingGuardId = booking.getGuardId();
     if (
-      !booking.getGuardId() ||
-      booking.getGuardId().getValue() !== guardId
+      !bookingGuardId ||
+      bookingGuardId.getValue() !== guardId
     ) {
       throw new ForbiddenException(
         'You are not assigned to this booking',
