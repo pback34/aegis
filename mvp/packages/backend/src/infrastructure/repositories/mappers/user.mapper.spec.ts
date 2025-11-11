@@ -14,7 +14,7 @@ describe('UserMapper', () => {
     it('should map domain Customer to database entities', () => {
       // Arrange
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'John Doe',
@@ -42,8 +42,9 @@ describe('UserMapper', () => {
 
     it('should map database entities to domain Customer', () => {
       // Arrange
+      const userId = UserId.create().getValue();
       const userEntity: UserEntity = {
-        id: 'user-id-123',
+        id: userId,
         email: 'customer@test.com',
         password_hash: 'hashedpassword123',
         role: 'customer',
@@ -61,7 +62,7 @@ describe('UserMapper', () => {
 
       // Assert
       expect(customer).toBeInstanceOf(Customer);
-      expect(customer.getId().getValue()).toBe('user-id-123');
+      expect(customer.getId().getValue()).toBe(userId);
       expect(customer.getEmail().getValue()).toBe('customer@test.com');
       expect(customer.getPasswordHash()).toBe('hashedpassword123');
       expect(customer.getRole()).toBe('customer');
@@ -74,7 +75,7 @@ describe('UserMapper', () => {
     it('should handle null phone number', () => {
       // Arrange
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'John Doe',
@@ -95,7 +96,7 @@ describe('UserMapper', () => {
     it('should map domain Guard to database entities with profile', () => {
       // Arrange
       const guard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('guard@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Mike Guard',
@@ -137,8 +138,9 @@ describe('UserMapper', () => {
 
     it('should map database entities to domain Guard', () => {
       // Arrange
+      const guardId = UserId.create().getValue();
       const userEntity: UserEntity = {
-        id: 'guard-id-123',
+        id: guardId,
         email: 'guard@test.com',
         password_hash: 'hashedpassword123',
         role: 'guard',
@@ -152,7 +154,7 @@ describe('UserMapper', () => {
       };
 
       const guardProfile: GuardProfileEntity = {
-        user_id: 'guard-id-123',
+        user_id: guardId,
         license_number: 'LIC-001-CA',
         hourly_rate: 50.0,
         rating: 5.0,
@@ -168,7 +170,7 @@ describe('UserMapper', () => {
 
       // Assert
       expect(guard).toBeInstanceOf(Guard);
-      expect(guard.getId().getValue()).toBe('guard-id-123');
+      expect(guard.getId().getValue()).toBe(guardId);
       expect(guard.getEmail().getValue()).toBe('guard@test.com');
       expect(guard.getRole()).toBe('guard');
 
@@ -176,7 +178,7 @@ describe('UserMapper', () => {
       expect(typedGuard.getLicenseNumber()).toBe('LIC-001-CA');
       expect(typedGuard.getHourlyRate()?.getAmount()).toBe(50.0);
       expect(typedGuard.getRating()).toBe(5.0);
-      expect(typedGuard.isAvailable()).toBe(true);
+      expect(typedGuard.getIsAvailable()).toBe(true);
       expect(typedGuard.getCurrentLocation()?.getLatitude()).toBe(37.7749);
       expect(typedGuard.getCurrentLocation()?.getLongitude()).toBe(-122.4194);
     });
@@ -184,11 +186,12 @@ describe('UserMapper', () => {
     it('should handle guard with missing optional fields', () => {
       // Arrange
       const guard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('guard@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Mike Guard',
         status: UserStatus.ACTIVE,
+        hourlyRate: new Money(50.0),
         rating: 5.0,
         isAvailable: false,
         currentLocation: new GeoLocation(0, 0),
@@ -201,15 +204,16 @@ describe('UserMapper', () => {
 
       // Assert
       expect(guardProfile).toBeDefined();
-      expect(guardProfile!.license_number).toBeNull();
-      expect(guardProfile!.hourly_rate).toBeNull();
-      expect(guardProfile!.last_location_update).toBeNull();
+      expect(guardProfile!.license_number).toBeNull(); // Optional field not provided
+      expect(guardProfile!.hourly_rate).toBe(50.0); // Required field is set
+      expect(guardProfile!.last_location_update).toBeNull(); // Optional field not provided
     });
 
     it('should throw error when mapping guard without profile', () => {
       // Arrange
+      const guardId = UserId.create().getValue();
       const userEntity: UserEntity = {
-        id: 'guard-id-123',
+        id: guardId,
         email: 'guard@test.com',
         password_hash: 'hashedpassword123',
         role: 'guard',
@@ -231,7 +235,7 @@ describe('UserMapper', () => {
     it('should maintain data integrity through round-trip mapping (Customer)', () => {
       // Arrange
       const originalCustomer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'John Doe',
@@ -244,7 +248,7 @@ describe('UserMapper', () => {
 
       // Act - Round trip: Domain → Database → Domain
       const { user: userEntity } = UserMapper.toPersistence(originalCustomer);
-      const reconstructedCustomer = UserMapper.toDomain(userEntity);
+      const reconstructedCustomer = UserMapper.toDomain(userEntity as any);
 
       // Assert
       expect(reconstructedCustomer.getId().getValue()).toBe(
@@ -265,7 +269,7 @@ describe('UserMapper', () => {
     it('should maintain data integrity through round-trip mapping (Guard)', () => {
       // Arrange
       const originalGuard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('guard@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Mike Guard',
@@ -296,7 +300,7 @@ describe('UserMapper', () => {
       );
       expect(reconstructedGuard.getHourlyRate()?.getAmount()).toBe(50.0);
       expect(reconstructedGuard.getRating()).toBe(4.8);
-      expect(reconstructedGuard.isAvailable()).toBe(true);
+      expect(reconstructedGuard.getIsAvailable()).toBe(true);
       expect(reconstructedGuard.getCurrentLocation()?.getLatitude()).toBe(
         37.7749,
       );

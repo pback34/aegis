@@ -58,7 +58,7 @@ describe('UserRepository Integration Tests', () => {
     it('should save and retrieve a customer', async () => {
       // Arrange
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'John Doe',
@@ -86,7 +86,7 @@ describe('UserRepository Integration Tests', () => {
     it('should find customer by email', async () => {
       // Arrange
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('findme@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Jane Doe',
@@ -109,7 +109,7 @@ describe('UserRepository Integration Tests', () => {
     it('should update customer information', async () => {
       // Arrange
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'John Doe',
@@ -147,7 +147,7 @@ describe('UserRepository Integration Tests', () => {
     it('should delete customer', async () => {
       // Arrange
       const customer = new Customer({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('customer@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'John Doe',
@@ -171,7 +171,7 @@ describe('UserRepository Integration Tests', () => {
     it('should save and retrieve a guard with profile', async () => {
       // Arrange
       const guard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('guard@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Mike Guard',
@@ -201,7 +201,7 @@ describe('UserRepository Integration Tests', () => {
       expect(retrievedGuard.getLicenseNumber()).toBe('LIC-001-CA');
       expect(retrievedGuard.getHourlyRate()?.getAmount()).toBe(50.0);
       expect(retrievedGuard.getRating()).toBe(5.0);
-      expect(retrievedGuard.isAvailable()).toBe(true);
+      expect(retrievedGuard.getIsAvailable()).toBe(true);
       expect(retrievedGuard.getCurrentLocation()?.getLatitude()).toBe(37.7749);
       expect(retrievedGuard.getCurrentLocation()?.getLongitude()).toBe(-122.4194);
     });
@@ -209,7 +209,7 @@ describe('UserRepository Integration Tests', () => {
     it('should find all guards', async () => {
       // Arrange
       const guard1 = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('guard1@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Guard One',
@@ -224,7 +224,7 @@ describe('UserRepository Integration Tests', () => {
       });
 
       const guard2 = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('guard2@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Guard Two',
@@ -253,7 +253,7 @@ describe('UserRepository Integration Tests', () => {
     it('should find only available guards', async () => {
       // Arrange
       const availableGuard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('available@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Available Guard',
@@ -268,7 +268,7 @@ describe('UserRepository Integration Tests', () => {
       });
 
       const unavailableGuard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('unavailable@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Unavailable Guard',
@@ -291,13 +291,13 @@ describe('UserRepository Integration Tests', () => {
       // Assert
       expect(availableGuards).toHaveLength(1);
       expect(availableGuards[0].getEmail().getValue()).toBe('available@test.com');
-      expect(availableGuards[0].isAvailable()).toBe(true);
+      expect(availableGuards[0].getIsAvailable()).toBe(true);
     });
 
     it('should update guard location', async () => {
       // Arrange
       const guard = new Guard({
-        id: UserId.generate(),
+        id: UserId.create(),
         email: new Email('guard@test.com'),
         passwordHash: 'hashedpassword123',
         fullName: 'Mike Guard',
@@ -331,7 +331,7 @@ describe('UserRepository Integration Tests', () => {
   describe('Error Cases', () => {
     it('should return null for non-existent user', async () => {
       // Act
-      const result = await repository.findById(UserId.generate());
+      const result = await repository.findById(UserId.create());
 
       // Assert
       expect(result).toBeNull();

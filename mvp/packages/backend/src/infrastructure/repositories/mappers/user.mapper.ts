@@ -11,7 +11,7 @@ import { GuardProfileEntity } from '../../database/entities/guard-profile.entity
 export class UserMapper {
   static toDomain(entity: UserEntity, guardProfile?: GuardProfileEntity): User {
     const baseProps = {
-      id: new UserId(entity.id),
+      id: UserId.fromString(entity.id),
       email: new Email(entity.email),
       passwordHash: entity.password_hash,
       fullName: entity.full_name,
@@ -25,12 +25,12 @@ export class UserMapper {
       return new Guard({
         ...baseProps,
         licenseNumber: guardProfile.license_number || undefined,
-        hourlyRate: guardProfile.hourly_rate ? new Money(guardProfile.hourly_rate) : undefined,
-        rating: guardProfile.rating,
+        hourlyRate: guardProfile.hourly_rate ? new Money(Number(guardProfile.hourly_rate)) : new Money(0),
+        rating: Number(guardProfile.rating),
         isAvailable: guardProfile.is_available,
         currentLocation:
           guardProfile.current_latitude && guardProfile.current_longitude
-            ? new GeoLocation(guardProfile.current_latitude, guardProfile.current_longitude)
+            ? new GeoLocation(Number(guardProfile.current_latitude), Number(guardProfile.current_longitude))
             : new GeoLocation(0, 0),
         lastLocationUpdate: guardProfile.last_location_update || undefined,
       });
@@ -70,7 +70,7 @@ export class UserMapper {
         license_number: user.getLicenseNumber() || null,
         hourly_rate: user.getHourlyRate()?.getAmount() || null,
         rating: user.getRating(),
-        is_available: user.isAvailable(),
+        is_available: user.getIsAvailable(),
         current_latitude: user.getCurrentLocation()?.getLatitude() || null,
         current_longitude: user.getCurrentLocation()?.getLongitude() || null,
         last_location_update: user.getLastLocationUpdate() || null,
