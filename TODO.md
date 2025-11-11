@@ -8,46 +8,464 @@
 
 ## 🎉 Phase 3 Progress Update
 
-### ✅ Completed (Current Session)
+### ✅ Completed (Session 2025-11-11)
 
-1. **Dependencies Installed**:
-   - ✅ `stripe` - Payment processing
-   - ✅ `ably` - Real-time messaging
-   - ✅ `@nestjs/passport`, `@nestjs/jwt`, `passport`, `passport-jwt` - Authentication
+**Location**: `mvp/packages/backend/src/infrastructure/payment/`
 
-2. **Payment Integration** (Task 1 - Partial):
-   - ✅ StripePaymentGatewayAdapter fully implemented
-   - ✅ 20 comprehensive unit tests (all passing)
-   - ✅ Handles authorization, capture, cancel, refund, status
-   - ✅ Proper error handling and logging
-   - ⏳ **Pending**: Integration tests with Stripe test mode
-   - ⏳ **Pending**: Unit tests for AuthorizePaymentUseCase and CapturePaymentUseCase
+1. **Dependencies Installed** ✅
+   ```bash
+   npm install stripe ably @nestjs/passport @nestjs/jwt passport passport-jwt
+   npm install -D @types/passport-jwt
+   ```
 
-3. **Test Count**: **143 tests passing** (up from 134, added 9 tests with some refactoring)
-   - Previous: 123 unit + 11 integration
-   - Current: 123 unit + 20 Stripe adapter tests
+2. **Payment Integration - Stripe Adapter** ✅ (Task 1 - Partial)
 
-### ⏳ Remaining for Phase 3
+   **Files Created**:
+   - ✅ `stripe-payment-gateway.adapter.ts` - Full implementation (220 lines)
+   - ✅ `stripe-payment-gateway.adapter.spec.ts` - Comprehensive tests (449 lines, 20 tests)
 
-1. **Real-Time Location Streaming** (Task 2 - Not Started):
-   - ❌ AblyLocationServiceAdapter implementation
-   - ❌ Unit tests for Ably adapter
-   - ❌ Integration tests with Ably sandbox
-   - ❌ UpdateGuardLocationUseCase implementation and tests
+   **Features Implemented**:
+   - ✅ `authorizePayment()` - Creates payment intent with manual capture
+   - ✅ `capturePayment()` - Captures authorized payment (full or partial)
+   - ✅ `cancelPayment()` - Cancels uncaptured payment intent
+   - ✅ `refundPayment()` - Processes refunds (full or partial)
+   - ✅ `getPaymentStatus()` - Retrieves payment status from Stripe
+   - ✅ Currency conversion (dollars ↔ cents) with proper rounding
+   - ✅ Comprehensive error handling (StripeError → domain errors)
+   - ✅ NestJS Logger integration for all operations
+   - ✅ Stripe API version: `2025-10-29.clover`
 
-2. **Authentication & Authorization Infrastructure** (Task 3 - Not Started):
-   - ❌ JWT Strategy (Passport)
-   - ❌ JwtAuthGuard and RolesGuard
-   - ❌ Decorators (@Public, @Roles, @CurrentUser)
-   - ❌ AuthService for token generation
-   - ❌ AuthModule configuration
-   - ❌ AuthController and other controllers
-   - ❌ Refactor auth use cases to remove embedded JWT logic
+   **Test Coverage**: 20 tests covering:
+   - Constructor validation
+   - All operations (happy paths)
+   - Error scenarios (Stripe errors, network errors)
+   - Currency conversion edge cases
+   - Partial amount operations
 
-3. **Additional Work**:
-   - ⏳ Complete payment use case tests
-   - ⏳ Stripe integration tests
-   - ⏳ Ably integration tests
+3. **Test Results** ✅
+   - **Total: 143 tests passing** (up from 134)
+   - **New: 20 Stripe adapter tests**
+   - All existing tests still pass
+   - Test execution time: ~12-13 seconds
+
+4. **Code Quality**:
+   - ✅ Follows existing project patterns
+   - ✅ Uses direct instantiation for unit tests (no NestJS test module)
+   - ✅ Proper TypeScript types throughout
+   - ✅ Clean separation of concerns
+
+---
+
+## 🚀 NEXT AGENT: What You Need to Do
+
+### Phase 3 Completion Status: ~33% Complete
+
+**Your mission**: Complete the remaining 67% of Phase 3 implementation.
+
+### 📋 Task Priority Order
+
+#### **TASK 1: Ably Real-Time Location Service** (Highest Priority)
+
+**Estimated Time**: 2-3 hours
+
+**Goal**: Implement real-time location streaming for guard tracking
+
+**Files to Create**:
+```
+mvp/packages/backend/src/infrastructure/realtime/
+├── ably-location-service.adapter.ts
+├── ably-location-service.adapter.spec.ts
+└── ably-location-service.integration.spec.ts (optional)
+```
+
+**Step-by-Step Implementation**:
+
+1. **Create the Ably Adapter** (`ably-location-service.adapter.ts`):
+   ```typescript
+   import { Injectable, Logger } from '@nestjs/common';
+   import * as Ably from 'ably';
+   import { ILocationService, LocationUpdatePayload } from '../../application/ports/location-service.interface';
+
+   @Injectable()
+   export class AblyLocationServiceAdapter implements ILocationService {
+     private readonly logger = new Logger(AblyLocationServiceAdapter.name);
+     private readonly client: Ably.Realtime;
+
+     constructor(apiKey: string) {
+       if (!apiKey) {
+         throw new Error('Ably API key is required');
+       }
+
+       this.client = new Ably.Realtime({ key: apiKey });
+       this.logger.log('Ably Location Service initialized');
+     }
+
+     async publishLocationUpdate(payload: LocationUpdatePayload): Promise<void> {
+       const channelName = `jobs:${payload.bookingId}:location`;
+       const channel = this.client.channels.get(channelName);
+
+       await channel.publish('location-update', {
+         guardId: payload.guardId,
+         latitude: payload.location.getLatitude(),
+         longitude: payload.location.getLongitude(),
+         timestamp: payload.timestamp.toISOString(),
+       });
+
+       this.logger.log(`Published location update for booking ${payload.bookingId}`);
+     }
+
+     async subscribeToLocationUpdates(
+       bookingId: string,
+       callback: (payload: LocationUpdatePayload) => void,
+     ): Promise<() => void> {
+       const channelName = `jobs:${bookingId}:location`;
+       const channel = this.client.channels.get(channelName);
+
+       await channel.subscribe('location-update', (message) => {
+         // Transform Ably message back to LocationUpdatePayload
+         // Call the callback
+       });
+
+       return () => {
+         channel.unsubscribe();
+         this.logger.log(`Unsubscribed from ${channelName}`);
+       };
+     }
+   }
+   ```
+
+2. **Create Unit Tests** (`ably-location-service.adapter.spec.ts`):
+   - Follow the pattern from `stripe-payment-gateway.adapter.spec.ts`
+   - Mock the Ably client
+   - Test publish, subscribe, error handling
+   - Aim for 15-20 tests
+
+3. **Pattern to Follow**: Look at `stripe-payment-gateway.adapter.spec.ts` for:
+   - Mock setup using `jest.fn()`
+   - Error handling patterns
+   - Test organization
+
+#### **TASK 2: UpdateGuardLocationUseCase** (High Priority)
+
+**Files to Create**:
+```
+mvp/packages/backend/src/application/use-cases/location/
+├── update-guard-location.use-case.ts
+├── update-guard-location.use-case.spec.ts
+```
+
+**Implementation**:
+```typescript
+export class UpdateGuardLocationUseCase {
+  constructor(
+    private readonly userRepository: IUserRepository,
+    private readonly bookingRepository: IBookingRepository,
+    private readonly locationService: ILocationService,
+  ) {}
+
+  async execute(dto: UpdateGuardLocationDto): Promise<void> {
+    // 1. Find guard by ID
+    // 2. Update guard's current location in database
+    // 3. Find active booking for guard
+    // 4. If booking exists, publish to Ably
+    // 5. Save location update to location_updates table (optional)
+  }
+}
+```
+
+**Pattern**: Follow `create-booking.use-case.ts` and `authorize-payment.use-case.ts`
+
+#### **TASK 3: Authentication Infrastructure** (Medium Priority - Most Complex)
+
+**This is the LARGEST remaining task. Estimated time: 4-5 hours**
+
+**3A. Create JWT Strategy** (`src/infrastructure/auth/strategies/jwt.strategy.ts`):
+```typescript
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { IUserRepository } from '../../../application/ports/user.repository.interface';
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor(private readonly userRepository: IUserRepository) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: process.env.JWT_SECRET || 'your-secret-key',
+    });
+  }
+
+  async validate(payload: any) {
+    const user = await this.userRepository.findById(payload.sub);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    return user;
+  }
+}
+```
+
+**3B. Create Guards**:
+
+`src/infrastructure/auth/guards/jwt-auth.guard.ts`:
+```typescript
+import { Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
+```
+
+`src/infrastructure/auth/guards/roles.guard.ts`:
+```typescript
+import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ROLES_KEY } from '../decorators/roles.decorator';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(ROLES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (!requiredRoles) {
+      return true;
+    }
+
+    const { user } = context.switchToHttp().getRequest();
+    return requiredRoles.some((role) => user.getRole() === role);
+  }
+}
+```
+
+**3C. Create Decorators**:
+
+`src/infrastructure/auth/decorators/public.decorator.ts`:
+```typescript
+import { SetMetadata } from '@nestjs/common';
+
+export const IS_PUBLIC_KEY = 'isPublic';
+export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
+```
+
+`src/infrastructure/auth/decorators/roles.decorator.ts`:
+```typescript
+import { SetMetadata } from '@nestjs/common';
+
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+```
+
+`src/infrastructure/auth/decorators/current-user.decorator.ts`:
+```typescript
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+
+export const CurrentUser = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest();
+    return request.user;
+  },
+);
+```
+
+**3D. Create AuthService** (`src/infrastructure/auth/auth.service.ts`):
+```typescript
+import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { User } from '../../domain/entities/user.entity';
+
+@Injectable()
+export class AuthService {
+  constructor(private readonly jwtService: JwtService) {}
+
+  async generateTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+    const payload = {
+      sub: user.getId().getValue(),
+      email: user.getEmail().getValue(),
+      role: user.getRole(),
+    };
+
+    return {
+      accessToken: this.jwtService.sign(payload, { expiresIn: '15m' }),
+      refreshToken: this.jwtService.sign(payload, { expiresIn: '7d' }),
+    };
+  }
+}
+```
+
+**3E. Create AuthModule** (`src/infrastructure/auth/auth.module.ts`):
+```typescript
+import { Module } from '@nestjs/common';
+import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { AuthService } from './auth.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { RolesGuard } from './guards/roles.guard';
+
+@Module({
+  imports: [
+    PassportModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'your-secret-key',
+      signOptions: { expiresIn: '15m' },
+    }),
+  ],
+  providers: [JwtStrategy, AuthService, JwtAuthGuard, RolesGuard],
+  exports: [AuthService, JwtAuthGuard, RolesGuard],
+})
+export class AuthModule {}
+```
+
+**3F. Refactor Auth Use Cases**:
+- Remove JWT logic from `login-user.use-case.ts`
+- The use case should return just the User entity
+- Token generation moves to AuthController
+
+#### **TASK 4: Create Controllers** (Lower Priority - Can be done last)
+
+This is Phase 4 work according to the plan, but if you have time:
+
+`src/presentation/controllers/auth.controller.ts`:
+```typescript
+import { Controller, Post, Body } from '@nestjs/common';
+import { Public } from '../../infrastructure/auth/decorators/public.decorator';
+import { RegisterUserUseCase } from '../../application/use-cases/auth/register-user.use-case';
+import { LoginUserUseCase } from '../../application/use-cases/auth/login-user.use-case';
+import { AuthService } from '../../infrastructure/auth/auth.service';
+import { RegisterUserDto, LoginUserDto } from '../../application/dtos/auth.dto';
+
+@Controller('auth')
+export class AuthController {
+  constructor(
+    private readonly registerUseCase: RegisterUserUseCase,
+    private readonly loginUseCase: LoginUserUseCase,
+    private readonly authService: AuthService,
+  ) {}
+
+  @Public()
+  @Post('register')
+  async register(@Body() dto: RegisterUserDto) {
+    const user = await this.registerUseCase.execute(dto);
+    const tokens = await this.authService.generateTokens(user);
+    return { user, ...tokens };
+  }
+
+  @Public()
+  @Post('login')
+  async login(@Body() dto: LoginUserDto) {
+    const user = await this.loginUseCase.execute(dto);
+    const tokens = await this.authService.generateTokens(user);
+    return { user, ...tokens };
+  }
+}
+```
+
+---
+
+## 🎯 Success Criteria for Next Session
+
+By the end of your session, you should have:
+
+- [ ] **AblyLocationServiceAdapter** fully implemented with tests (15-20 tests)
+- [ ] **UpdateGuardLocationUseCase** implemented with tests
+- [ ] **JWT Strategy** implemented
+- [ ] **Auth Guards** (JwtAuthGuard, RolesGuard) implemented
+- [ ] **Auth Decorators** (@Public, @Roles, @CurrentUser) implemented
+- [ ] **AuthService** for token generation
+- [ ] **AuthModule** configured and wired up
+- [ ] **Test count**: 180-200+ tests passing
+- [ ] **Auth use cases** refactored (JWT logic removed)
+- [ ] All tests passing with no regressions
+
+---
+
+## 📚 Reference Files to Study
+
+Before starting, review these files for patterns:
+
+1. **Adapter Pattern**: `src/infrastructure/payment/stripe-payment-gateway.adapter.ts`
+2. **Unit Test Pattern**: `src/infrastructure/payment/stripe-payment-gateway.adapter.spec.ts`
+3. **Use Case Pattern**: `src/application/use-cases/booking/create-booking.use-case.ts`
+4. **Use Case Tests**: `src/application/use-cases/booking/create-booking.use-case.spec.ts`
+5. **Interface Definitions**: `src/application/ports/payment-gateway.interface.ts`
+6. **Existing Auth**: `src/application/use-cases/auth/login-user.use-case.ts` (lines 16-50 have JWT logic to extract)
+
+---
+
+## ⚠️ CRITICAL REMINDERS
+
+1. **Testing Pattern**: Use direct instantiation for unit tests, NOT `Test.createTestingModule()`
+2. **Mock Functions**: Use `jest.fn()` for all mocks (see Stripe test for pattern)
+3. **Error Handling**: Wrap external service calls in try/catch with proper logging
+4. **TypeORM Decimals**: Remember `Number()` conversion for decimal fields
+5. **Environment Variables**: Document all new env vars needed (ABLY_API_KEY, etc.)
+6. **Run Tests Frequently**: `npm test` should always pass before committing
+
+---
+
+## 🏃 Quick Start Commands
+
+```bash
+# Navigate to backend
+cd mvp/packages/backend
+
+# Run unit tests
+npm test
+
+# Run integration tests (requires PostgreSQL)
+npm run test:integration
+
+# Run specific test file
+npm test -- --testPathPattern=ably-location-service
+
+# Run all tests
+npm run test:all
+
+# Check git status
+git status
+
+# Commit your work
+git add -A
+git commit -m "feat(phase3): Implement [what you did]"
+git push -u origin claude/review-todo-list-011CV1h95oXbUf85JYE5sQSJ
+```
+
+---
+
+## 📊 Current State Summary
+
+**What's Done**:
+- ✅ Stripe payment adapter (20 tests)
+- ✅ Payment use cases exist (no tests yet)
+- ✅ All dependencies installed
+- ✅ 143 tests passing
+
+**What's Missing**:
+- ❌ Ably adapter (~15-20 tests needed)
+- ❌ UpdateGuardLocationUseCase (~8-10 tests needed)
+- ❌ Auth infrastructure (~10-15 files, ~20-30 tests)
+- ❌ Controllers (Phase 4, optional)
+
+**Estimated Remaining Work**: 6-8 hours for a complete Phase 3 implementation
+
+---
+
+## 💡 Tips for Success
+
+1. **Start with Ably**: It's similar to Stripe adapter you can reference
+2. **Test as you go**: Don't write all code then test, write test → implement → verify
+3. **Follow existing patterns**: The codebase is consistent, maintain that consistency
+4. **Read TESTING.md**: It has important patterns and rationale
+5. **Check TODO comments**: Some files may have TODO comments with hints
+6. **Document as you code**: Update this TODO.md when you complete major sections
+
+**Good luck! The foundation is solid. You're building on 143 passing tests. Keep that green! 🟢**
 
 ---
 
