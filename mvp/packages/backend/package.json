@@ -17,6 +17,8 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:integration": "jest --testPathPattern=integration --runInBand",
     "test:integration:watch": "jest --testPathPattern=integration --watch --runInBand",
+    "test:integration:api": "jest --testPathPattern=integration/api --runInBand",
+    "test:integration:repositories": "jest --testPathPattern=integration/repositories --runInBand",
     "test:all": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "typeorm": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli",
@@ -81,7 +83,7 @@
       "<rootDir>/src",
       "<rootDir>/test"
     ],
-    "testRegex": ".*\\.spec\\.ts$",
+    "testRegex": ".*\\.(spec|e2e-spec)\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
