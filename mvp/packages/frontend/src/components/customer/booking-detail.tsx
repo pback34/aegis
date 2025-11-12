@@ -2,6 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { jobsApi, formatCurrency, getStatusColor, formatStatus, formatPaymentStatus, type BookingWithGuard } from '@/lib/jobs-api';
+import { JobMap } from '@/components/map/job-map';
+import { useState, useEffect } from 'react';
 
 interface BookingDetailProps {
   bookingId: string;
@@ -73,6 +75,33 @@ export default function BookingDetail({ bookingId }: BookingDetailProps) {
           </p>
         </div>
       </div>
+
+      {/* Real-Time Map - Show when guard is assigned */}
+      {(booking.status === 'accepted' || booking.status === 'in_progress' || booking.status === 'completed') && booking.guard && (
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            {booking.status === 'in_progress' ? 'Live Guard Location' : 'Service Location Map'}
+          </h3>
+          <div className="h-[500px] rounded-lg overflow-hidden border border-gray-200">
+            <JobMap
+              jobId={booking.id}
+              serviceLocation={{
+                latitude: booking.serviceLatitude,
+                longitude: booking.serviceLongitude,
+              }}
+              showGuardLocation={booking.status === 'in_progress' || booking.status === 'completed'}
+              autoCenter={booking.status === 'in_progress'}
+            />
+          </div>
+          {booking.status === 'in_progress' && (
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-800">
+                🔵 Tracking your guard in real-time. The map updates automatically every few seconds.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Schedule Information */}
       <div className="bg-white rounded-lg shadow-md p-6">
