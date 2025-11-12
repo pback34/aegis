@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  JoinColumn,
 } from 'typeorm';
 import { GuardProfileEntity } from './guard-profile.entity';
 
@@ -47,6 +48,7 @@ export class UserEntity {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @OneToOne(() => GuardProfileEntity, (profile) => profile.user)
+  @OneToOne(() => GuardProfileEntity)
+  @JoinColumn({ name: 'id', referencedColumnName: 'user_id' })
   guardProfile?: GuardProfileEntity;
 }

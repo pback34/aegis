@@ -2,10 +2,7 @@ import {
   Entity,
   Column,
   PrimaryColumn,
-  OneToOne,
-  JoinColumn,
 } from 'typeorm';
-import { UserEntity } from './user.entity';
 
 @Entity('guard_profiles')
 export class GuardProfileEntity {
@@ -32,8 +29,4 @@ export class GuardProfileEntity {
 
   @Column({ type: 'timestamp', nullable: true })
   last_location_update: Date | null;
-
-  @OneToOne(() => UserEntity, (user) => user.guardProfile)
-  @JoinColumn({ name: 'user_id' })
-  user: UserEntity;
 }
