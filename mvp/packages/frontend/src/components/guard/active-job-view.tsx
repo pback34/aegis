@@ -13,6 +13,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { LocationTracker } from './location-tracker';
 import { JobMap } from '@/components/map/job-map';
+import { PaymentStatus } from '@/components/payment/payment-status';
 
 interface ActiveJobViewProps {
   job: BookingWithGuard;
@@ -161,37 +162,29 @@ export function ActiveJobView({ job }: ActiveJobViewProps) {
 
       {/* Payment Status */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-gray-900">Payment Information</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>
 
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <div className="text-sm font-medium text-gray-500">Payment Status</div>
-            <div className="mt-1">
-              <span
-                className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                  job.paymentStatus === 'authorized'
-                    ? 'bg-blue-50 text-blue-600'
-                    : job.paymentStatus === 'captured'
-                    ? 'bg-green-50 text-green-600'
-                    : job.paymentStatus === 'failed'
-                    ? 'bg-red-50 text-red-600'
-                    : 'bg-yellow-50 text-yellow-600'
-                }`}
-              >
-                {formatPaymentStatus(job.paymentStatus)}
-              </span>
-            </div>
+        <PaymentStatus
+          status={job.paymentStatus}
+          amount={(job.estimatedCostCents || 0) / 100}
+          capturedAmount={job.actualCostCents ? job.actualCostCents / 100 : undefined}
+        />
+
+        {job.paymentStatus === 'authorized' && (
+          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              💳 Payment is authorized and will be automatically captured when you complete this job.
+            </p>
           </div>
+        )}
 
-          {job.paymentIntentId && (
-            <div>
-              <div className="text-sm font-medium text-gray-500">Payment Intent ID</div>
-              <div className="mt-1 text-xs text-gray-900 font-mono">
-                {job.paymentIntentId.slice(0, 20)}...
-              </div>
-            </div>
-          )}
-        </div>
+        {job.paymentStatus === 'pending' && (
+          <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-sm text-yellow-800">
+              ⚠️ Payment has not been authorized yet. Customer needs to authorize payment before you can complete the job.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Real-Time Location Map */}

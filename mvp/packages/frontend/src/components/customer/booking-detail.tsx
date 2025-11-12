@@ -1,15 +1,21 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { jobsApi, formatCurrency, getStatusColor, formatStatus, formatPaymentStatus, type BookingWithGuard } from '@/lib/jobs-api';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { jobsApi, formatCurrency, getStatusColor, formatStatus, type BookingWithGuard } from '@/lib/jobs-api';
 import { JobMap } from '@/components/map/job-map';
-import { useState, useEffect } from 'react';
+import { PaymentStatus } from '@/components/payment/payment-status';
+import { PaymentAuthorization } from '@/components/payment/payment-authorization';
 
 interface BookingDetailProps {
   bookingId: string;
 }
 
 export default function BookingDetail({ bookingId }: BookingDetailProps) {
+  const queryClient = useQueryClient();
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
   const {
     data: booking,
     isLoading,
@@ -20,6 +26,24 @@ export default function BookingDetail({ bookingId }: BookingDetailProps) {
     queryFn: () => jobsApi.getBooking(bookingId),
     refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
   });
+
+  const handlePaymentSuccess = (paymentIntentId: string) => {
+    console.log('Payment authorized:', paymentIntentId);
+    setShowPaymentForm(false);
+    setPaymentError(null);
+    // Refresh booking data to show updated payment status
+    queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+  };
+
+  const handlePaymentError = (error: string) => {
+    console.error('Payment error:', error);
+    setPaymentError(error);
+  };
+
+  const handleCancelPayment = () => {
+    setShowPaymentForm(false);
+    setPaymentError(null);
+  };
 
   if (isLoading) {
     return (
@@ -45,6 +69,7 @@ export default function BookingDetail({ bookingId }: BookingDetailProps) {
 
   const isActive = booking.status === 'in_progress';
   const isCompleted = booking.status === 'completed';
+  const canAuthorizePayment = booking.guard && booking.paymentStatus === 'pending';
 
   return (
     <div className="space-y-6">
@@ -188,11 +213,13 @@ export default function BookingDetail({ bookingId }: BookingDetailProps) {
         )}
       </div>
 
-      {/* Payment Information */}
+      {/* Payment Section */}
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment</h3>
+
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          {/* Cost Information */}
+          <div className="flex items-center justify-between pb-4 border-b">
             <div>
               <p className="text-sm text-gray-500">
                 {isCompleted ? 'Final Cost' : 'Estimated Cost'}
@@ -201,54 +228,50 @@ export default function BookingDetail({ bookingId }: BookingDetailProps) {
                 {formatCurrency(booking.actualCostCents || booking.estimatedCostCents)}
               </p>
             </div>
-            <div>
-              <p className="text-sm text-gray-500 text-right">Payment Status</p>
-              <p className="text-right">
-                <span
-                  className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
-                    booking.paymentStatus === 'captured'
-                      ? 'bg-green-100 text-green-800'
-                      : booking.paymentStatus === 'authorized'
-                      ? 'bg-blue-100 text-blue-800'
-                      : booking.paymentStatus === 'failed'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {formatPaymentStatus(booking.paymentStatus)}
-                </span>
-              </p>
-            </div>
           </div>
 
+          {/* Show Payment Authorization Form or Payment Status */}
+          {showPaymentForm && canAuthorizePayment ? (
+            <div className="space-y-4">
+              <h4 className="font-semibold text-gray-900">Authorize Payment</h4>
+              {paymentError && (
+                <div className="bg-red-50 border border-red-200 rounded p-3">
+                  <p className="text-sm text-red-800">{paymentError}</p>
+                </div>
+              )}
+              <PaymentAuthorization
+                bookingId={booking.id}
+                amount={(booking.estimatedCostCents || 0) / 100}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+                onCancel={handleCancelPayment}
+              />
+            </div>
+          ) : (
+            <>
+              {/* Payment Status Display */}
+              <PaymentStatus
+                status={booking.paymentStatus}
+                amount={(booking.estimatedCostCents || 0) / 100}
+                capturedAmount={booking.actualCostCents ? booking.actualCostCents / 100 : undefined}
+              />
+
+              {/* Authorize Payment Button */}
+              {canAuthorizePayment && !showPaymentForm && (
+                <button
+                  onClick={() => setShowPaymentForm(true)}
+                  className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                >
+                  Authorize Payment Now
+                </button>
+              )}
+            </>
+          )}
+
           {booking.paymentIntentId && (
-            <div>
+            <div className="pt-4 border-t">
               <p className="text-xs text-gray-500">Payment Intent ID</p>
-              <p className="text-sm text-gray-700 font-mono">{booking.paymentIntentId}</p>
-            </div>
-          )}
-
-          {booking.paymentStatus === 'pending' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-800">
-                Payment will be authorized when a guard accepts your booking.
-              </p>
-            </div>
-          )}
-
-          {booking.paymentStatus === 'authorized' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-sm text-yellow-800">
-                Payment has been authorized. It will be captured when the service is completed.
-              </p>
-            </div>
-          )}
-
-          {booking.paymentStatus === 'captured' && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-sm text-green-800">
-                Payment has been successfully processed. Thank you!
-              </p>
+              <p className="text-sm text-gray-700 font-mono break-all">{booking.paymentIntentId}</p>
             </div>
           )}
         </div>
