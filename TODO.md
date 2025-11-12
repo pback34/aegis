@@ -1,8 +1,8 @@
 # TODO for Next Session - Phase 5 Frontend Implementation
 
-**Last Updated**: 2025-11-12 (Phase 5 Task 2 Complete - Customer Dashboard)
-**Current Branch**: `claude/mvp-implementation-continue-011CV38pQtVd9zm68U6ra89F`
-**Status**: Backend ✅ | Phase 5 Task 1 ✅ | Phase 5 Task 2 ✅ | Ready for Task 3 (Guard Dashboard) 🚀
+**Last Updated**: 2025-11-12 (Phase 5 Task 3 Complete - Guard Dashboard)
+**Current Branch**: `claude/mvp-implementation-continue-011CV3AYnNrTNWmXkL8XQGmo`
+**Status**: Backend ✅ | Phase 5 Task 1 ✅ | Phase 5 Task 2 ✅ | Phase 5 Task 3 ✅ | Ready for Task 4 (Map Integration) 🚀
 
 ---
 
@@ -174,42 +174,104 @@ mvp/packages/frontend/src/
 9. Filter bookings by status
 10. Click any booking to view details
 
-**⚠️ What's Coming Next (Task 3):**
-- Guard dashboard implementation
-- Available jobs list
-- Job acceptance flow
-- Active job tracking with location updates
+---
+
+## 🎉 Phase 5 Task 3 Complete - Guard Dashboard Ready!
+
+**What Was Completed This Session:**
+1. ✅ **Enhanced Guard Dashboard** - Statistics cards (available jobs, active jobs, completed, total earnings) with working navigation
+2. ✅ **Available Jobs List Component** - Job cards with distance calculation, accept functionality
+3. ✅ **Available Jobs Page** - Browse and accept jobs with geolocation integration
+4. ✅ **Location Tracker Component** - Automatic location updates every 10 seconds with error handling
+5. ✅ **Active Job View Component** - Job details, payment status, location tracker, complete button
+6. ✅ **Active Job Page** - Manage current active job with real-time updates
+7. ✅ **Job History Page** - Earnings summary and completed jobs table
+8. ✅ **TypeScript Compilation** - All files compile successfully with no errors
+9. ✅ **Git Commit** - Committed and pushed all guard dashboard features
+
+**Key Files Created:**
+```
+mvp/packages/frontend/src/
+├── app/(authenticated)/guard/
+│   ├── page.tsx                          # Enhanced dashboard with stats & navigation
+│   ├── available-jobs/page.tsx           # Browse available jobs
+│   ├── active-job/page.tsx               # Manage active job
+│   └── history/page.tsx                  # Job history & earnings
+└── components/guard/
+    ├── available-jobs-list.tsx           # Jobs list with accept functionality
+    ├── active-job-view.tsx               # Active job details & controls
+    └── location-tracker.tsx              # Auto location tracking every 10s
+```
+
+**Technical Highlights:**
+- Real-time location tracking with browser geolocation API
+- Distance calculation using Haversine formula
+- Auto-refresh intervals (5-30s depending on page)
+- Loading and error states throughout
+- Responsive design with Tailwind CSS
+- React Query mutations for job acceptance/completion
+- Real-time elapsed time and earnings calculation
+- Map placeholder ready for Task 4 integration
+
+**Guard User Flow:**
+1. Guard logs in → dashboard shows statistics (available: X, active: Y, completed: Z, earnings: $N)
+2. Click "View Jobs" → `/guard/available-jobs`
+3. Browse jobs sorted by distance, see location, time, pay
+4. Accept a job → redirected to `/guard/active-job`
+5. Location tracking starts automatically (every 10s)
+6. View job details, real-time elapsed time, current earnings
+7. Complete job → redirected to dashboard
+8. View "History" → `/guard/history` - see all completed jobs and total earnings
+
+**Commit Info:**
+- **Hash**: `c804e73`
+- **Message**: "feat(phase5): Complete Task 3 - Guard Dashboard with Job Management"
+- **Branch**: `claude/mvp-implementation-continue-011CV3AYnNrTNWmXkL8XQGmo`
+- **Status**: Pushed to remote ✅
 
 ---
 
-## 🎯 Next Steps - Phase 5 Task 3: Guard Dashboard
+## 🎯 Next Steps - Phase 5 Task 4: Map Integration with Ably Real-Time
 
-**Goal**: Build guard dashboard for browsing, accepting, and managing jobs
+**Goal**: Integrate interactive maps with real-time location updates for both customers and guards
 
 **What to Build:**
-1. Available jobs list with:
-   - Cards showing job details (location, time, pay)
-   - Distance calculation from guard's location
-   - "Accept Job" button
-   - Filter options
-2. Active job view with:
-   - Job details and customer information
-   - Location tracking (send location every 10s)
-   - Map placeholder (full implementation in Task 4)
-   - "Complete Job" button
-3. Job history page with:
-   - List of completed jobs
-   - Earnings summary
-   - Job statistics
+1. Mapbox map component:
+   - Fetch Mapbox token from `/map/config` endpoint
+   - Display interactive map
+   - Service location marker (static - customer's booking location)
+   - Guard location marker (real-time updates)
+   - Auto-center on guard location
+2. Ably real-time integration:
+   - Subscribe to `jobs:{jobId}:location` channel
+   - Listen for `location-update` events
+   - Update guard marker position in real-time
+   - Handle connection errors gracefully
+3. Integration points:
+   - Replace map placeholder in customer booking detail page
+   - Replace map placeholder in guard active job view
+   - Show customer where their guard is in real-time
+   - Show guard their own location on the map
+
+**Dependencies to Install:**
+```bash
+cd mvp/packages/frontend
+npm install mapbox-gl ably react-map-gl
+npm install -D @types/mapbox-gl
+```
 
 **Files to Create:**
 ```
-app/(authenticated)/guard/available-jobs/page.tsx
-app/(authenticated)/guard/active-job/page.tsx
-app/(authenticated)/guard/history/page.tsx
-components/guard/available-jobs-list.tsx
-components/guard/active-job-view.tsx
-components/guard/location-tracker.tsx  # Auto-send location every 10s
+components/map/mapbox-map.tsx          # Main map component
+components/map/location-marker.tsx     # Marker components
+lib/ably-client.ts                     # Ably real-time client
+lib/map-config.ts                      # Map configuration helper
+```
+
+**Files to Update:**
+```
+components/customer/booking-detail.tsx  # Replace map placeholder
+components/guard/active-job-view.tsx    # Replace map placeholder
 ```
 
 ---
