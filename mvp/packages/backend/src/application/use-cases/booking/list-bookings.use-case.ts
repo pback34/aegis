@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { IBookingRepository } from '../../ports/booking.repository.interface';
 import { UserId } from '../../../domain/value-objects/user-id.value-object';
 import { BookingStatus } from '../../../domain/entities/booking.entity';
@@ -10,7 +10,10 @@ import {
 
 @Injectable()
 export class ListBookingsUseCase {
-  constructor(private readonly bookingRepository: IBookingRepository) {}
+  constructor(
+    @Inject('IBookingRepository')
+    private readonly bookingRepository: IBookingRepository,
+  ) {}
 
   async execute(
     query: ListBookingsQueryDto,

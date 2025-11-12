@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { ILocationRepository } from '../../ports/location.repository.interface';
 import { IBookingRepository } from '../../ports/booking.repository.interface';
 import { GetCurrentLocationResponseDto } from '../../dtos/location.dto';
@@ -6,7 +6,9 @@ import { GetCurrentLocationResponseDto } from '../../dtos/location.dto';
 @Injectable()
 export class GetCurrentLocationUseCase {
   constructor(
+    @Inject('ILocationRepository')
     private readonly locationRepository: ILocationRepository,
+    @Inject('IBookingRepository')
     private readonly bookingRepository: IBookingRepository,
   ) {}
 

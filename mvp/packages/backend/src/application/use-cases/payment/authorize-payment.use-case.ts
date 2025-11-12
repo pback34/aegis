@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { IPaymentRepository } from '../../ports/payment.repository.interface';
 import { IBookingRepository } from '../../ports/booking.repository.interface';
 import { IUserRepository } from '../../ports/user.repository.interface';
@@ -14,9 +14,13 @@ import {
 @Injectable()
 export class AuthorizePaymentUseCase {
   constructor(
+    @Inject('IPaymentRepository')
     private readonly paymentRepository: IPaymentRepository,
+    @Inject('IBookingRepository')
     private readonly bookingRepository: IBookingRepository,
+    @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
+    @Inject('IPaymentGateway')
     private readonly paymentGateway: IPaymentGateway,
     private readonly pricingService: PricingService,
   ) {}

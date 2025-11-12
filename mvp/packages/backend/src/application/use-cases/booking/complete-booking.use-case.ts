@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Inject,
 } from '@nestjs/common';
 import { IBookingRepository } from '../../ports/booking.repository.interface';
 import { IUserRepository } from '../../ports/user.repository.interface';
@@ -11,7 +12,9 @@ import { CompleteBookingResponseDto } from '../../dtos/booking.dto';
 @Injectable()
 export class CompleteBookingUseCase {
   constructor(
+    @Inject('IBookingRepository')
     private readonly bookingRepository: IBookingRepository,
+    @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
   ) {}
 

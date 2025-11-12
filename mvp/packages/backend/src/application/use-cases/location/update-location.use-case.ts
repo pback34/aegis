@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  Inject,
 } from '@nestjs/common';
 import { ILocationRepository } from '../../ports/location.repository.interface';
 import { IBookingRepository } from '../../ports/booking.repository.interface';
@@ -17,9 +18,13 @@ import {
 @Injectable()
 export class UpdateLocationUseCase {
   constructor(
+    @Inject('ILocationRepository')
     private readonly locationRepository: ILocationRepository,
+    @Inject('IBookingRepository')
     private readonly bookingRepository: IBookingRepository,
+    @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
+    @Inject('ILocationService')
     private readonly locationService: ILocationService,
   ) {}
 

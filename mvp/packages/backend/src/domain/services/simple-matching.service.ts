@@ -1,3 +1,4 @@
+import { Injectable } from '@nestjs/common';
 import { Guard } from '../entities/guard.entity';
 import { GeoLocation } from '../value-objects';
 
@@ -6,6 +7,7 @@ export interface GuardMatch {
   distance: number; // in kilometers
 }
 
+@Injectable()
 export class SimpleMatchingService {
   /**
    * Find the nearest available guard to a service location

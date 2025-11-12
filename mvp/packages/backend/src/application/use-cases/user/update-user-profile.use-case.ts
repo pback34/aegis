@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { IUserRepository } from '../../ports/user.repository.interface';
 import { UserId } from '../../../domain/value-objects/user-id.value-object';
 import { UpdateUserProfileDto, UpdateUserProfileResponseDto } from '../../dtos/user.dto';
@@ -12,7 +12,10 @@ import { Money } from '../../../domain/value-objects/money.value-object';
  */
 @Injectable()
 export class UpdateUserProfileUseCase {
-  constructor(private readonly userRepository: IUserRepository) {}
+  constructor(
+    @Inject('IUserRepository')
+    private readonly userRepository: IUserRepository,
+  ) {}
 
   async execute(
     userId: UserId,
