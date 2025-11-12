@@ -69,7 +69,7 @@ export const jobsApi = {
    */
   listBookings: async (): Promise<BookingResponse[]> => {
     const response = await apiClient.get('/jobs');
-    return response.data;
+    return response.data.bookings || [];
   },
 
   /**
