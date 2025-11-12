@@ -32,7 +32,7 @@ export interface BookingResponse {
 export interface BookingWithGuard extends BookingResponse {
   guard?: {
     id: string;
-    name: string;
+    fullName: string;
     phone?: string;
   };
 }

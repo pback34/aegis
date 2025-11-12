@@ -131,10 +131,10 @@ export default function BookingDetail({ bookingId }: BookingDetailProps) {
           <div className="space-y-2">
             <div className="flex items-center space-x-3">
               <div className="bg-blue-600 text-white rounded-full h-12 w-12 flex items-center justify-center font-bold">
-                {booking.guard.name.charAt(0).toUpperCase()}
+                {booking.guard.fullName.charAt(0).toUpperCase()}
               </div>
               <div>
-                <p className="text-gray-900 font-medium">{booking.guard.name}</p>
+                <p className="text-gray-900 font-medium">{booking.guard.fullName}</p>
                 {booking.guard.phone && (
                   <p className="text-sm text-gray-500">{booking.guard.phone}</p>
                 )}

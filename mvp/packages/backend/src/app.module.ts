@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 
 // Entities
 import { UserEntity } from './infrastructure/database/entities/user.entity';
@@ -48,8 +49,9 @@ import { AuthorizePaymentUseCase } from './application/use-cases/payment/authori
 import { CapturePaymentUseCase } from './application/use-cases/payment/capture-payment.use-case';
 
 // Services
-import { AuthService } from './infrastructure/auth/auth.service';
 import { JwtAuthGuard } from './infrastructure/auth/guards/jwt-auth.guard';
+import { JwtStrategy } from './infrastructure/auth/strategies/jwt.strategy';
+import { AuthService } from './infrastructure/auth/auth.service';
 import { typeOrmConfig } from './infrastructure/config/typeorm.config';
 import { SimpleMatchingService } from './domain/services/simple-matching.service';
 import { PricingService } from './domain/services/pricing.service';
@@ -77,6 +79,9 @@ import { ConfigService } from '@nestjs/config';
       PaymentEntity,
     ]),
 
+    // Passport for authentication
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+
     // JWT Module
     JwtModule.register({
       global: true,
@@ -100,8 +105,11 @@ import { ConfigService } from '@nestjs/config';
       useClass: JwtAuthGuard,
     },
 
-    // Services
+    // Auth Services
+    JwtStrategy,
     AuthService,
+
+    // Services
     SimpleMatchingService,
     {
       provide: PricingService,

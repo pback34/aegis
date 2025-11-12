@@ -5,6 +5,7 @@ import {
   IsEnum,
   IsOptional,
   IsPhoneNumber,
+  ValidateIf,
 } from 'class-validator';
 import { UserRole } from '../../domain/entities/user.entity';
 
@@ -23,7 +24,7 @@ export class RegisterUserDto {
   @MinLength(2)
   fullName: string;
 
-  @IsOptional()
+  @ValidateIf((o) => o.phone !== undefined && o.phone !== null && o.phone !== '')
   @IsPhoneNumber()
   phone?: string;
 
