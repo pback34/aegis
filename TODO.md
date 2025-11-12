@@ -1,8 +1,8 @@
 # TODO for Next Session - Phase 5 Frontend Implementation
 
-**Last Updated**: 2025-11-12 (Phase 5 Task 3 Complete - Guard Dashboard)
-**Current Branch**: `claude/mvp-implementation-continue-011CV3AYnNrTNWmXkL8XQGmo`
-**Status**: Backend ✅ | Phase 5 Task 1 ✅ | Phase 5 Task 2 ✅ | Phase 5 Task 3 ✅ | Ready for Task 4 (Map Integration) 🚀
+**Last Updated**: 2025-11-12 (Phase 5 Task 4 Complete - Map Integration)
+**Current Branch**: `claude/mvp-implementation-continue-011CV3ByxGEE7bYAVSrKb5ZB`
+**Status**: Backend ✅ | Phase 5 Task 1 ✅ | Phase 5 Task 2 ✅ | Phase 5 Task 3 ✅ | Phase 5 Task 4 ✅ | Ready for Task 5 (Payment Integration) 🚀
 
 ---
 
@@ -231,48 +231,124 @@ mvp/packages/frontend/src/
 
 ---
 
-## 🎯 Next Steps - Phase 5 Task 4: Map Integration with Ably Real-Time
+## 🎉 Phase 5 Task 4 Complete - Map Integration with Real-Time Tracking!
 
-**Goal**: Integrate interactive maps with real-time location updates for both customers and guards
+**What Was Completed This Session:**
+1. ✅ **Map Dependencies** - Installed mapbox-gl (v3.16.0), react-map-gl (v8.1.0), ably (v2.14.0), @types/mapbox-gl
+2. ✅ **Ably Client Library** - Created real-time pub/sub wrapper for location updates
+3. ✅ **Map Config Helper** - Fetches Mapbox token and Ably key from /map/config endpoint
+4. ✅ **JobMap Component** - Interactive map with service location and guard location markers
+5. ✅ **Customer Map Integration** - Real-time guard tracking in booking detail page
+6. ✅ **Guard Map Integration** - Service location navigation in active job view
+7. ✅ **Real-Time Updates** - Ably subscription to jobs:{jobId}:location channel
+8. ✅ **Connection Monitoring** - Status indicator (connecting, connected, error)
+9. ✅ **TypeScript Compilation** - Dev server works correctly with module resolution
+10. ✅ **Git Commit** - Committed and pushed all map integration features
+
+**Key Files Created:**
+```
+mvp/packages/frontend/src/
+├── lib/
+│   ├── ably-client.ts                          # Ably real-time client wrapper
+│   └── map-config.ts                           # Map configuration fetcher
+└── components/map/
+    └── job-map.tsx                             # Main map component with markers
+```
+
+**Key Files Updated:**
+```
+mvp/packages/frontend/src/components/
+├── customer/booking-detail.tsx                 # Added map for in_progress jobs
+└── guard/active-job-view.tsx                   # Added map for navigation
+```
+
+**Technical Highlights:**
+- Interactive Mapbox maps with pan, zoom, and navigation controls
+- Service location marker (blue) - customer's booking address
+- Guard location marker (green) - real-time position with pulse animation
+- Auto-center on guard updates (optional, enabled for customers)
+- Manual re-center controls for both service and guard locations
+- Real-time Ably subscriptions with automatic cleanup
+- Connection status monitoring (connecting → connected → error states)
+- Graceful error handling for config loading failures
+- Development server works correctly (production build has Turbopack module resolution issue)
+
+**Customer Experience:**
+1. Customer views booking detail for accepted/in_progress job
+2. Map appears showing service location (blue marker)
+3. When job is in_progress, green marker shows guard's real-time location
+4. Map auto-centers on guard's position as it updates
+5. Customer can manually re-center on service or guard location
+6. Connection status shows "Live Tracking" when real-time updates are active
+
+**Guard Experience:**
+1. Guard accepts a job and views active job page
+2. Map shows service location (blue marker) where guard needs to go
+3. Guard's own position appears as green marker (updated automatically)
+4. Guard can see distance/direction to service location
+5. Map helps navigate to customer's location
+6. Location tracker sends position updates every 10 seconds
+
+**Commit Info:**
+- **Hash**: `b7a3616`
+- **Message**: "feat(phase5): Complete Task 4 - Map Integration with Ably Real-Time"
+- **Branch**: `claude/mvp-implementation-continue-011CV3ByxGEE7bYAVSrKb5ZB`
+- **Status**: Pushed to remote ✅
+
+---
+
+## 🎯 Next Steps - Phase 5 Task 5: Payment Integration with Stripe
+
+**Goal**: Integrate Stripe payment processing for booking payments with authorization and capture flow
 
 **What to Build:**
-1. Mapbox map component:
-   - Fetch Mapbox token from `/map/config` endpoint
-   - Display interactive map
-   - Service location marker (static - customer's booking location)
-   - Guard location marker (real-time updates)
-   - Auto-center on guard location
-2. Ably real-time integration:
-   - Subscribe to `jobs:{jobId}:location` channel
-   - Listen for `location-update` events
-   - Update guard marker position in real-time
-   - Handle connection errors gracefully
-3. Integration points:
-   - Replace map placeholder in customer booking detail page
-   - Replace map placeholder in guard active job view
-   - Show customer where their guard is in real-time
-   - Show guard their own location on the map
+1. Stripe Elements integration:
+   - Install @stripe/stripe-js and @stripe/react-stripe-js
+   - Create payment form component with card input
+   - Handle payment intent creation
+   - Implement payment authorization flow
+2. Payment authorization (on booking creation):
+   - Authorize payment when customer creates booking
+   - Store payment intent ID in booking
+   - Show payment status in UI
+3. Payment capture (on job completion):
+   - Automatically capture payment when guard completes job
+   - Update payment status display
+   - Show final payment breakdown
+4. Payment status tracking:
+   - Display payment status throughout booking lifecycle
+   - Show authorization pending, authorized, captured, failed states
+   - Handle payment errors gracefully
 
 **Dependencies to Install:**
 ```bash
 cd mvp/packages/frontend
-npm install mapbox-gl ably react-map-gl
-npm install -D @types/mapbox-gl
+npm install @stripe/stripe-js @stripe/react-stripe-js
 ```
 
 **Files to Create:**
 ```
-components/map/mapbox-map.tsx          # Main map component
-components/map/location-marker.tsx     # Marker components
-lib/ably-client.ts                     # Ably real-time client
-lib/map-config.ts                      # Map configuration helper
+components/payment/payment-form.tsx       # Stripe Elements payment form
+components/payment/payment-status.tsx     # Payment status display
+lib/stripe-client.ts                      # Stripe client wrapper
 ```
 
 **Files to Update:**
 ```
-components/customer/booking-detail.tsx  # Replace map placeholder
-components/guard/active-job-view.tsx    # Replace map placeholder
+components/customer/create-booking-form.tsx  # Add payment form
+components/customer/booking-detail.tsx       # Enhanced payment status
+components/guard/active-job-view.tsx         # Payment capture on completion
 ```
+
+**Payment Flow:**
+1. Customer creates booking → payment form appears
+2. Customer enters card details → payment authorized
+3. Guard accepts and completes job → payment captured automatically
+4. Customer and guard see payment status updates in real-time
+
+**API Endpoints Already Available:**
+- `POST /payments/authorize` - Authorize payment (Customer)
+- `POST /payments/capture` - Capture payment (Guard, on job completion)
 
 ---
 
