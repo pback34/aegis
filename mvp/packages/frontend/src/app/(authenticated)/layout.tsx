@@ -15,7 +15,8 @@ export default function AuthenticatedLayout({ children }: AuthenticatedLayoutPro
   useEffect(() => {
     // Load user on mount if we have a token
     loadUser();
-  }, [loadUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     // If not loading and not authenticated, redirect to login

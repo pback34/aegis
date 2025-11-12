@@ -11,7 +11,8 @@ export default function Home() {
   useEffect(() => {
     // Load user on mount
     loadUser();
-  }, [loadUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!isLoading) {
