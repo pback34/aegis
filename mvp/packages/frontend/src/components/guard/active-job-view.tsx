@@ -12,6 +12,7 @@ import {
 } from '@/lib/jobs-api';
 import { useRouter } from 'next/navigation';
 import { LocationTracker } from './location-tracker';
+import { JobMap } from '@/components/map/job-map';
 
 interface ActiveJobViewProps {
   job: BookingWithGuard;
@@ -193,31 +194,27 @@ export function ActiveJobView({ job }: ActiveJobViewProps) {
         </div>
       </div>
 
-      {/* Map Placeholder */}
+      {/* Real-Time Location Map */}
       <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Location Map</h3>
-        <div className="h-64 flex items-center justify-center bg-gray-100 rounded-lg border-2 border-dashed border-gray-300">
-          <div className="text-center">
-            <svg
-              className="mx-auto h-12 w-12 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
-              />
-            </svg>
-            <p className="mt-2 text-sm text-gray-500">
-              Interactive map will be added in Phase 5 Task 4
-            </p>
-            <p className="text-xs text-gray-400">
-              Service location: {job.serviceAddress}
-            </p>
-          </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Service Location & Your Position
+        </h3>
+        <div className="h-[500px] rounded-lg overflow-hidden border border-gray-200">
+          <JobMap
+            jobId={job.id}
+            serviceLocation={{
+              latitude: job.serviceLatitude,
+              longitude: job.serviceLongitude,
+            }}
+            showGuardLocation={true}
+            autoCenter={false}
+          />
+        </div>
+        <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-sm text-blue-800">
+            📍 The blue marker shows the service location where you need to be.
+            The green marker shows your current position (updated automatically).
+          </p>
         </div>
       </div>
 
