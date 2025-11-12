@@ -2,15 +2,40 @@
 
 import { useAuthStore } from '@/lib/auth-store';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { jobsApi, formatCurrency } from '@/lib/jobs-api';
+import { useEffect } from 'react';
 
 export default function GuardDashboard() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
 
+  // Fetch guard's bookings
+  const { data: bookings, isLoading } = useQuery({
+    queryKey: ['guard-bookings'],
+    queryFn: jobsApi.listBookings,
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
+
   const handleLogout = () => {
     logout();
     router.push('/login');
   };
+
+  // Calculate statistics
+  const stats = {
+    available: bookings?.filter((b) => b.status === 'pending' && !b.guardId).length || 0,
+    active: bookings?.filter((b) => b.guardId === user?.id && (b.status === 'accepted' || b.status === 'in_progress')).length || 0,
+    completed: bookings?.filter((b) => b.guardId === user?.id && b.status === 'completed').length || 0,
+    totalEarnings: bookings
+      ?.filter((b) => b.guardId === user?.id && b.status === 'completed')
+      .reduce((sum, b) => sum + (b.actualCostCents || b.estimatedCostCents), 0) || 0,
+  };
+
+  // Find active job ID
+  const activeJob = bookings?.find(
+    (b) => b.guardId === user?.id && (b.status === 'accepted' || b.status === 'in_progress')
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -41,25 +66,74 @@ export default function GuardDashboard() {
           <p className="mt-2 text-gray-600">Welcome, {user?.name || 'Guard'}!</p>
         </div>
 
+        {/* Statistics Cards */}
+        <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg bg-white p-6 shadow">
+            <div className="text-sm font-medium text-gray-500">Available Jobs</div>
+            <div className="mt-2 text-3xl font-semibold text-gray-900">
+              {isLoading ? '...' : stats.available}
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-white p-6 shadow">
+            <div className="text-sm font-medium text-gray-500">Active Jobs</div>
+            <div className="mt-2 text-3xl font-semibold text-green-600">
+              {isLoading ? '...' : stats.active}
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-white p-6 shadow">
+            <div className="text-sm font-medium text-gray-500">Completed</div>
+            <div className="mt-2 text-3xl font-semibold text-gray-900">
+              {isLoading ? '...' : stats.completed}
+            </div>
+          </div>
+
+          <div className="rounded-lg bg-white p-6 shadow">
+            <div className="text-sm font-medium text-gray-500">Total Earnings</div>
+            <div className="mt-2 text-3xl font-semibold text-gray-900">
+              {isLoading ? '...' : formatCurrency(stats.totalEarnings)}
+            </div>
+          </div>
+        </div>
+
+        {/* Action Cards */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-lg bg-white p-6 shadow">
             <h3 className="text-lg font-medium text-gray-900">Available Jobs</h3>
             <p className="mt-2 text-sm text-gray-600">
               Browse and accept available security jobs
             </p>
-            <button className="mt-4 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-              View Jobs
-            </button>
+            <div className="mt-4">
+              <button
+                onClick={() => router.push('/guard/available-jobs')}
+                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              >
+                View Jobs ({stats.available})
+              </button>
+            </div>
           </div>
 
           <div className="rounded-lg bg-white p-6 shadow">
             <h3 className="text-lg font-medium text-gray-900">Active Job</h3>
             <p className="mt-2 text-sm text-gray-600">
-              View your current active job
+              {activeJob
+                ? 'You have an active job'
+                : 'No active job at the moment'}
             </p>
-            <button className="mt-4 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-              View Active
-            </button>
+            <div className="mt-4">
+              <button
+                onClick={() => activeJob && router.push('/guard/active-job')}
+                disabled={!activeJob}
+                className={`rounded-md px-4 py-2 text-sm font-medium text-white ${
+                  activeJob
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-gray-400 cursor-not-allowed'
+                }`}
+              >
+                {activeJob ? 'View Active Job' : 'No Active Job'}
+              </button>
+            </div>
           </div>
 
           <div className="rounded-lg bg-white p-6 shadow">
@@ -67,19 +141,15 @@ export default function GuardDashboard() {
             <p className="mt-2 text-sm text-gray-600">
               View past jobs and earnings
             </p>
-            <button className="mt-4 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-              View History
-            </button>
+            <div className="mt-4">
+              <button
+                onClick={() => router.push('/guard/history')}
+                className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+              >
+                View History ({stats.completed})
+              </button>
+            </div>
           </div>
-        </div>
-
-        <div className="mt-8 rounded-lg bg-green-50 p-6">
-          <h3 className="text-lg font-semibold text-green-900">
-            Phase 5 Task 1 Complete!
-          </h3>
-          <p className="mt-2 text-sm text-green-700">
-            Authentication UI is ready. Guard dashboard features will be implemented in Task 3.
-          </p>
         </div>
       </main>
     </div>
