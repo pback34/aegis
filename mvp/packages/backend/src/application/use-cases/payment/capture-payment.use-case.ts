@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject } from '@nestjs/common';
 import { IPaymentRepository } from '../../ports/payment.repository.interface';
 import { IPaymentGateway } from '../../ports/payment-gateway.interface';
 import { PaymentStatus } from '../../../domain/entities/payment.entity';
@@ -11,7 +11,9 @@ import {
 @Injectable()
 export class CapturePaymentUseCase {
   constructor(
+    @Inject('IPaymentRepository')
     private readonly paymentRepository: IPaymentRepository,
+    @Inject('IPaymentGateway')
     private readonly paymentGateway: IPaymentGateway,
   ) {}
 

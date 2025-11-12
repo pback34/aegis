@@ -51,6 +51,11 @@ import { CapturePaymentUseCase } from './application/use-cases/payment/capture-p
 import { AuthService } from './infrastructure/auth/auth.service';
 import { JwtAuthGuard } from './infrastructure/auth/guards/jwt-auth.guard';
 import { typeOrmConfig } from './infrastructure/config/typeorm.config';
+import { SimpleMatchingService } from './domain/services/simple-matching.service';
+import { PricingService } from './domain/services/pricing.service';
+import { AblyLocationServiceAdapter } from './infrastructure/realtime/ably-location-service.adapter';
+import { StripePaymentGatewayAdapter } from './infrastructure/payment/stripe-payment-gateway.adapter';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -97,6 +102,38 @@ import { typeOrmConfig } from './infrastructure/config/typeorm.config';
 
     // Services
     AuthService,
+    SimpleMatchingService,
+    {
+      provide: PricingService,
+      useFactory: () => new PricingService(20), // 20% platform fee
+    },
+    {
+      provide: 'ILocationService',
+      useFactory: (configService: ConfigService) => {
+        const apiKey = configService.get<string>('ABLY_API_KEY') || '';
+        // For local development, use a dummy key if not configured
+        const validKey = apiKey && !apiKey.includes('your_ably') ? apiKey : null;
+        if (!validKey) {
+          console.warn('[WARN] Ably API key not configured. Real-time location features will be disabled.');
+          // Return a null adapter that won't crash the app
+          return {
+            publishLocationUpdate: async () => {
+              console.warn('[WARN] Ably not configured - location update skipped');
+            }
+          } as any;
+        }
+        return new AblyLocationServiceAdapter(validKey);
+      },
+      inject: [ConfigService],
+    },
+    {
+      provide: 'IPaymentGateway',
+      useFactory: (configService: ConfigService) => {
+        const apiKey = configService.get<string>('STRIPE_SECRET_KEY') || '';
+        return new StripePaymentGatewayAdapter(apiKey);
+      },
+      inject: [ConfigService],
+    },
 
     // Repository Providers
     {

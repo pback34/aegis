@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { IBookingRepository } from '../../ports/booking.repository.interface';
 import { IUserRepository } from '../../ports/user.repository.interface';
 import { Booking, BookingStatus } from '../../../domain/entities/booking.entity';
@@ -15,7 +15,9 @@ import {
 @Injectable()
 export class CreateBookingUseCase {
   constructor(
+    @Inject('IBookingRepository')
     private readonly bookingRepository: IBookingRepository,
+    @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
     private readonly matchingService: SimpleMatchingService,
     private readonly pricingService: PricingService,

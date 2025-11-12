@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { IUserRepository } from '../../ports/user.repository.interface';
 import { Email } from '../../../domain/value-objects/email.value-object';
@@ -12,7 +12,10 @@ import { LoginUserDto } from '../../dtos/auth.dto';
  */
 @Injectable()
 export class LoginUserUseCase {
-  constructor(private readonly userRepository: IUserRepository) {}
+  constructor(
+    @Inject('IUserRepository')
+    private readonly userRepository: IUserRepository,
+  ) {}
 
   async execute(dto: LoginUserDto): Promise<User> {
     // Validate email format

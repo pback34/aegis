@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { IBookingRepository } from '../../ports/booking.repository.interface';
 import { GetBookingResponseDto } from '../../dtos/booking.dto';
 
 @Injectable()
 export class GetBookingUseCase {
-  constructor(private readonly bookingRepository: IBookingRepository) {}
+  constructor(
+    @Inject('IBookingRepository')
+    private readonly bookingRepository: IBookingRepository,
+  ) {}
 
   async execute(bookingId: string): Promise<GetBookingResponseDto> {
     const booking = await this.bookingRepository.findById(bookingId);
