@@ -1,7 +1,7 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // API Base URL - defaults to localhost for development
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
 
 // Create axios instance
 export const apiClient = axios.create({
@@ -99,8 +99,8 @@ export interface ApiError {
 export interface User {
   id: string;
   email: string;
-  role: 'CUSTOMER' | 'GUARD';
-  name?: string;
+  role: 'customer' | 'guard' | 'admin';
+  fullName: string;
   phone?: string;
   profilePictureUrl?: string;
   createdAt: string;
@@ -116,8 +116,8 @@ export interface AuthResponse {
 export interface RegisterRequest {
   email: string;
   password: string;
-  role: 'CUSTOMER' | 'GUARD';
-  name?: string;
+  role: 'customer' | 'guard';
+  fullName: string;
   phone?: string;
 }
 

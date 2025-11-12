@@ -17,9 +17,9 @@ export default function Home() {
     if (!isLoading) {
       if (isAuthenticated && user) {
         // Redirect based on user role
-        if (user.role === 'CUSTOMER') {
+        if (user.role === 'customer') {
           router.push('/customer');
-        } else if (user.role === 'GUARD') {
+        } else if (user.role === 'guard') {
           router.push('/guard');
         }
       } else {
